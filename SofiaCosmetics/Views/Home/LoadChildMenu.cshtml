@@ -1,0 +1,38 @@
+﻿
+@model IEnumerable<SofiaCosmetics.Models.MENU>
+
+@{
+    int[] childCountArray = ViewBag.Lst;
+    var items = Model.ToList();
+}
+
+<ul class="dropdown-menu">
+
+    @for (int i = 0; i < items.Count; i++)
+    {
+        var menu = items[i];
+        bool hasChild = childCountArray[i] > 0;
+
+        if (!hasChild)
+        {
+            <li>
+                <a class="dropdown-item" href="/danh-muc/@menu.MenuLink">
+                    @menu.MenuName
+                </a>
+            </li>
+        }
+        else
+        {
+            <li class="dropdown-submenu">
+                <a class="dropdown-item" href="#">
+                    @menu.MenuName
+                </a>
+
+                @Html.Action("LoadChildMenu", "Home", new { parentId = menu.Id })
+            </li>
+        }
+    }
+
+</ul>
+
+

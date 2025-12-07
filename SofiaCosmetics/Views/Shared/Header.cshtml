@@ -1,0 +1,165 @@
+﻿@model IEnumerable<SofiaCosmetics.Models.MENU>
+@{
+    var childCounts = ViewBag.ChildCounts as Dictionary<int, int>;
+}
+
+<header class="header shadow-sm border-bottom">
+
+    <div class="header-middle py-3 bg-white">
+        <div class="container d-flex justify-content-between align-items-center flex-wrap">
+
+            <a href="/" class="navbar-brand d-flex align-items-center mb-2 mb-md-0">
+                <img src="~/images/brands/logo.jpg" alt="Logo" style="height:50px;">
+            </a>
+
+            <div class="search-group d-flex align-items-center flex-grow-1 mx-4" style="max-width:700px;">
+                <form class="search-box flex-grow-1 d-flex align-items-center"
+                      action="@Url.Action("TimKiem", "Home")" method="get">
+
+                    <input type="text" name="keyword" class="search-input"
+                           placeholder="Tìm kiếm sản phẩm..." />
+
+                    <button class="btn-search" type="submit">
+                        <img src="~/images/orthers/IconUI/icon-search.png" class="icon-search" />
+                    </button>
+
+                </form>
+            </div>
+
+
+            <div class="navbar-cart d-flex align-items-center">
+
+                <div class="wishlist me-3">
+                    <a href="@Url.Action("Index", "Wishlist")"
+                       class="wishlist-btn position-relative d-inline-flex align-items-center">
+                        <i class="lni lni-heart fs-4"></i>
+                        <span class="badge-wishlist wishlist-count">
+                            @(
+    Session["Wishlist"] != null
+    ? ((List<SofiaCosmetics.Models.ViewModels.WishlistItem>)Session["Wishlist"]).Count
+    : 0
+)
+                        </span>
+
+                    </a>
+                </div>
+
+                <div class="cart-items me-3">
+                    <a href="@Url.Action("Index", "Cart")"
+                       class="wishlist-btn position-relative d-inline-flex align-items-center">
+                        <i class="lni lni-cart fs-4"></i>
+                        <span class="badge-wishlist cart-count">
+                            @(Session["Cart"] != null
+        ? ((List<SofiaCosmetics.Models.ViewModels.CartItem>)Session["Cart"]).Sum(x => x.SoLuong)
+        : 0)
+                        </span>
+
+                    </a>
+                </div>
+
+                <div class="user-login text-end position-relative">
+
+                    @if (Session["HoTen"] != null)
+                    {
+                        <span class="user-name dropdown-toggle" id="userMenuToggle" style="cursor:pointer;">
+                            <i class="lni lni-user"></i> @Session["HoTen"]
+                        </span>
+
+                        <a href="@Url.Action("Logout", "User")" class="logout-link ms-2">
+                            <i class="lni lni-exit"></i> Đăng xuất
+                        </a>
+
+                        <!-- POPUP -->
+                        <div id="userPopup" class="user-popup shadow-sm">
+
+                            <div class="p-3 border-bottom">
+                                <div class="fw-bold fs-6">@Session["HoTen"]</div>
+                                <div class="text-muted">@Session["Email"]</div>
+
+                                @if (Session["SDT"] != null)
+                                {
+                                    <div class="mt-2">📞 @Session["SDT"]</div>
+                                }
+
+                                @if (Session["DiaChi"] != null)
+                                {
+                                    <div>📍 @Session["DiaChi"]</div>
+                                }
+
+                                @if (Session["NgaySinh"] != null)
+                                {
+                                    <div>🎂 @Convert.ToDateTime(Session["NgaySinh"]).ToString("dd/MM/yyyy")</div>
+                                }
+                            </div>
+
+                            <!-- ACTION BUTTONS -->
+                            <div class="p-3">
+                                <a href="@Url.Action("EditInfo","User")" class="d-block mb-2">
+                                    ✏️ Chỉnh sửa thông tin
+                                </a>
+
+                                <a href="@Url.Action("LichSuMuaHang","Checkout")" class="d-block">
+                                    🛒 Lịch sử mua hàng
+                                </a>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <a href="@Url.Action("Login", "User")" class="auth-link">
+                            <i class="lni lni-enter"></i> Đăng nhập
+                        </a>
+                        <span class="separator">|</span>
+                        <a href="@Url.Action("Register", "User")" class="auth-link">
+                            <i class="lni lni-add-user"></i> Đăng ký
+                        </a>
+                    }
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MENU -->
+    <nav class="navbar navbar-expand-lg main-nav shadow-sm">
+        <div class="container">
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainMenu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse justify-content-center" id="mainMenu">
+                <ul class="navbar-nav gap-3">
+                    @foreach (var menu in Model.Where(x => x.ParentId == null).OrderBy(x => x.OrderNumber))
+                    {
+                        var hasChild = childCounts.ContainsKey(menu.Id) && childCounts[menu.Id] > 0;
+
+                        if (!hasChild)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link fw-semibold" href="/danh-muc/@menu.MenuLink">
+                                    @menu.MenuName
+                                </a>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link fw-semibold dropdown-toggle"
+                                   href="#" data-bs-toggle="dropdown">
+                                    @menu.MenuName
+                                </a>
+
+                                @Html.Action("LoadChildMenu", "Home", new { parentId = menu.Id })
+                            </li>
+                        }
+                    }
+                </ul>
+            </div>
+
+        </div>
+    </nav>
+
+
+</header>

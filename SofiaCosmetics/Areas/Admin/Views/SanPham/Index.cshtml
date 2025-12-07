@@ -1,0 +1,1117 @@
+﻿@model IEnumerable<SofiaCosmetics.Models.AdminModels.SanPhamAdmin>
+@section styles{
+    <link href="~/Content/admin-sanpham.css" rel="stylesheet" />
+}
+@{
+    ViewBag.Title = "Quản lý sản phẩm";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<div class="top-action-bar menu-like">
+    <h2 class="page-title">Quản lý sản phẩm</h2>
+
+    <div class="search-area menu-like">
+        <input type="text"
+               id="searchBox"
+               placeholder="Tìm kiếm sản phẩm..."
+               value="@ViewBag.Search" />
+
+        <button class="btn-search" id="btnSearch" type="button" title="Tìm kiếm">
+            <i class="bi bi-search"></i>
+        </button>
+
+        <a href="/Admin/SanPham" class="btn-reset" title="Làm mới">
+            <i class="bi bi-arrow-clockwise"></i>
+        </a>
+    </div>
+
+    <div class="action-buttons">
+        <button class="btn-add-product menu-like" onclick="openAddModal()">
+            <i class="bi bi-bag-plus"></i> Thêm sản phẩm
+        </button>
+    </div>
+</div>
+
+<div class="product-card">
+    <table class="product-table">
+        <thead>
+            <tr>
+                <th style="width:85px">Mã SP</th>
+                <th style="width:240px">Sản phẩm</th>
+                <th style="width:160px">Thương hiệu</th>
+                <th style="width:140px">Loại</th>
+                <th style="width:160px">Giá</th>
+                <th style="width:90px">Tồn kho</th>
+                <th style="width:130px">Trạng thái</th>
+                <th style="width:150px" class="text-end">Thao tác</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                foreach (var sp in Model)
+                {
+                    var isActive = sp.TrangThai == true;
+                    string statusClass = isActive ? "badge-status product-active" : "badge-status product-inactive";
+
+                    <tr>
+                        <td>@($"SP{sp.MaSP:000}")</td>
+
+                        <td>
+                            <div class="prod-info">
+                                @if (!string.IsNullOrEmpty(sp.HinhAnh))
+                                {
+                                    <img src="@sp.HinhAnh"
+                                         onerror="this.src='/images/no-image.png'"
+                                         class="prod-img" />
+                                }
+                                else
+                                {
+                                    <div class="prod-img-placeholder">
+                                        <i class="bi bi-image"></i>
+                                    </div>
+                                }
+
+                                <div class="prod-text">
+                                    <div class="prod-name">@sp.TenSP</div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td>@sp.ThuongHieu</td>
+                        <td>@(string.IsNullOrWhiteSpace(sp.TenBienThe) ? "-" : sp.TenBienThe)</td>
+
+                        <td>
+                            @if (sp.GiaSauGiam.HasValue)
+                            {
+                                <div class="price-col">
+                                    <span class="price-main">
+                                        @String.Format("{0:n0} đ", sp.GiaSauGiam)
+                                    </span>
+
+                                    @if (sp.PhanTramGiam.HasValue && sp.PhanTramGiam.Value > 0 && sp.GiaGoc.HasValue)
+                                    {
+                                        <span class="price-old">
+                                            @String.Format("{0:n0} đ", sp.GiaGoc)
+                                        </span>
+                                        <span class="price-sale">
+                                            -@sp.PhanTramGiam%
+                                        </span>
+                                    }
+                                </div>
+                            }
+                            else
+                            { <span>-</span>}
+                        </td>
+
+                        <td>@(sp.TonKho.HasValue ? sp.TonKho.ToString() : "-")</td>
+
+                        <td>
+                            <span class="@statusClass">
+                                @(isActive ? "Còn bán" : "Ngừng bán")
+                            </span>
+                        </td>
+
+                        <!-- ✅ FIX: thêm class actions-cell để CSS ăn + padding giống các cột khác -->
+                        <td class="actions-cell text-end">
+                            <div class="actions">
+                                <button class="btn-view btn-icon tooltip-btn"
+                                        data-tip="Xem chi tiết"
+                                        onclick="viewProduct(@sp.MaSP)">
+                                    <i class="bi bi-file-earmark-text-fill"></i>
+                                </button>
+
+                                <button class="btn-edit btn-icon tooltip-btn"
+                                        data-tip="Sửa sản phẩm"
+                                        onclick="editProduct(@sp.MaSP)">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+
+                                <button class="btn-delete btn-icon tooltip-btn"
+                                        data-tip="Xóa sản phẩm"
+                                        onclick="deleteProduct(@sp.MaSP)">
+                                    <i class="bi bi-trash3-fill"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="8" class="empty-row">Không có sản phẩm nào.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="pagination-box">
+        @if (ViewBag.TotalPages > 1)
+        {
+            <ul class="pagination">
+                <li class="@(ViewBag.Page == 1 ? "disabled" : "")">
+                    <a href="?page=@(ViewBag.Page - 1)&search=@ViewBag.Search">‹</a>
+                </li>
+
+                @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                {
+                    <li class="@(i == ViewBag.Page ? "active" : "")">
+                        <a href="?page=@i&search=@ViewBag.Search">@i</a>
+                    </li>
+                }
+
+                <li class="@(ViewBag.Page == ViewBag.TotalPages ? "disabled" : "")">
+                    <a href="?page=@(ViewBag.Page + 1)&search=@ViewBag.Search">›</a>
+                </li>
+            </ul>
+        }
+    </div>
+</div>
+
+<!-- ================== MODAL VIEW ================== -->
+<div id="viewModal" class="sp-modal-backdrop" style="display:none;">
+    <div class="sp-modal sp-modal--view slide-in-right">
+        <div class="sp-modal-head">
+            <div class="head-left">
+                <div class="sp-modal-badge">Chi tiết</div>
+                <h3 id="v_TenSP" class="sp-modal-title">Tên sản phẩm</h3>
+                <div class="sp-modal-sub">
+                    <span id="v_MaSP" class="sp-chip-id">SP000</span>
+                    <span id="v_StatusChip" class="status-chip is-active">Còn bán</span>
+                </div>
+            </div>
+            <button class="sp-modal-close" onclick="hideModal('#viewModal')">×</button>
+        </div>
+
+        <div class="sp-modal-body">
+            <div class="sp-view-grid">
+                <div class="sp-view-media">
+                    <div class="sp-slider">
+                        <button class="sp-slider-btn prev" onclick="slidePrev('v')">‹</button>
+                        <img id="v_Image" src="/images/no-image.png" alt="product" />
+                        <button class="sp-slider-btn next" onclick="slideNext('v')">›</button>
+                    </div>
+                    <div id="v_Thumbs" class="thumbs"></div>
+                </div>
+
+                <div class="sp-view-info">
+                    <div class="sp-info-cards">
+                        <div class="sp-info-card"><label>Danh mục</label><p id="v_DanhMuc">-</p></div>
+                        <div class="sp-info-card"><label>Thương hiệu</label><p id="v_ThuongHieu">-</p></div>
+                        <div class="sp-info-card"><label>Khuyến mãi</label><p id="v_KhuyenMai">Không áp dụng</p></div>
+                        <div class="sp-info-card"><label>Loại</label><p id="v_BienThe">Default</p></div>
+                        <div class="sp-info-card"><label>Giá gốc</label><p id="v_GiaGoc">0 đ</p></div>
+                        <div class="sp-info-card">
+                            <label>Giá sau giảm</label>
+                            <p id="v_GiaSauGiam" class="price-main">0 đ</p>
+                            <small id="v_PhanTram" class="price-sale green" style="display:none;">-0%</small>
+                        </div>
+                        <div class="sp-info-card"><label>Tồn kho</label><p id="v_TonKho">0</p></div>
+                    </div>
+
+                    <div class="sp-desc">
+                        <label>Mô tả sản phẩm</label>
+                        <div id="v_MoTa" class="sp-desc-box">Không có mô tả</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sp-modal-foot">
+            <button class="sp-btn ghost" onclick="hideModal('#viewModal')">Đóng</button>
+        </div>
+    </div>
+</div>
+
+<!-- ================== MODAL ADD ================== -->
+<div id="addModal" class="sp-modal-backdrop" style="display:none;">
+    <div class="sp-modal slide-in-right">
+        <div class="sp-modal-head">
+            <div class="head-left">
+                <div class="sp-modal-badge add">Thêm mới</div>
+                <h3 class="sp-modal-title">Thêm sản phẩm</h3>
+            </div>
+            <button class="sp-modal-close" onclick="hideModal('#addModal')">×</button>
+        </div>
+
+        <div class="sp-modal-body">
+            <div class="sp-form-grid">
+                <!-- LEFT -->
+                <div class="sp-col">
+                    <label class="sp-label">Tên sản phẩm <span>*</span></label>
+                    <div class="sp-input">
+                        <i class="bi bi-tag"></i>
+                        <input id="add_TenSP" placeholder="Ví dụ: Sữa rửa mặt dịu nhẹ..." />
+                    </div>
+
+                    <label class="sp-label">Mô tả</label>
+                    <textarea id="add_MoTa" class="sp-textarea" rows="6"
+                              placeholder="Mô tả công dụng, thành phần, cách dùng..."></textarea>
+
+                    <label class="sp-label">Ảnh sản phẩm <span>*</span></label>
+                    <input id="add_File" type="file" accept="image/*" multiple hidden />
+                    <div class="upload-box" onclick="document.getElementById('add_File').click()">
+                        <div class="upload-icon"><i class="bi bi-cloud-arrow-up-fill"></i></div>
+                        <div class="upload-text">
+                            <div class="upload-title">Bấm để chọn ảnh</div>
+                            <div class="upload-sub">Chọn nhiều ảnh (JPG/PNG/WEBP)</div>
+                            <div id="add_FileName" class="upload-filename">Chưa chọn tệp</div>
+                        </div>
+                    </div>
+
+                    <div id="add_PreviewList" class="preview-list empty">Chưa có ảnh</div>
+                </div>
+
+                <!-- RIGHT -->
+                <div class="sp-col">
+                    <label class="sp-label">Danh mục <span>*</span></label>
+                    <select id="add_MaDM" class="sp-select">
+                        <option value="">-- Chọn danh mục --</option>
+                    </select>
+
+                    <label class="sp-label">Thương hiệu <span>*</span></label>
+                    <select id="add_MaTH" class="sp-select">
+                        <option value="">-- Chọn thương hiệu --</option>
+                    </select>
+
+                    <label class="sp-label">Khuyến mãi</label>
+                    <select id="add_MaKM" class="sp-select">
+                        <option value="">Không áp dụng</option>
+                    </select>
+
+                    <label class="sp-label">Loại</label>
+                    <select id="add_BienThe" class="sp-select">
+                        <option value="">-- Chọn loại --</option>
+                    </select>
+
+                    <div class="sp-two">
+                        <div>
+                            <label class="sp-label">Giá gốc <span>*</span></label>
+                            <div class="sp-input">
+                                <i class="bi bi-cash"></i>
+                                <input id="add_Gia" type="number" min="0" placeholder="0" />
+                            </div>
+                        </div>
+                        <div>
+                            <label class="sp-label">Tồn kho <span>*</span></label>
+                            <div class="sp-input">
+                                <i class="bi bi-box"></i>
+                                <input id="add_TonKho" type="number" min="0" placeholder="0" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sp-price-preview">
+                        <div>
+                            <div class="sp-price-label">Giá sau giảm</div>
+                            <div id="add_GiaSauGiamPreview" class="sp-price-value">0 đ</div>
+                        </div>
+                        <div id="add_PhanTramPreview" class="sp-price-sale green" style="display:none;">-0%</div>
+                    </div>
+
+                    <div class="sp-switch-row">
+                        <div><div class="sp-switch-title">Trạng thái bán</div></div>
+                        <label class="sp-switch">
+                            <input type="checkbox" id="add_TrangThai" checked />
+                            <span class="sp-switch-ui"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sp-modal-foot">
+            <button class="sp-btn primary" onclick="saveAdd()">
+                <i class="bi bi-check2-circle"></i> Thêm sản phẩm
+            </button>
+            <button class="sp-btn ghost" onclick="hideModal('#addModal')">Hủy</button>
+        </div>
+    </div>
+</div>
+
+<!-- ================== MODAL EDIT ================== -->
+<div id="editModal" class="sp-modal-backdrop" style="display:none;">
+    <div class="sp-modal slide-in-right">
+        <div class="sp-modal-head">
+            <div class="head-left">
+                <div class="sp-modal-badge edit">Chỉnh sửa</div>
+                <h3 class="sp-modal-title">Sửa thông tin sản phẩm</h3>
+            </div>
+            <button class="sp-modal-close" onclick="hideModal('#editModal')">×</button>
+        </div>
+
+        <input type="hidden" id="edit_MaSP" />
+
+        <div class="sp-modal-body">
+            <div class="sp-form-grid">
+                <!-- LEFT -->
+                <div class="sp-col">
+                    <label class="sp-label">Tên sản phẩm <span>*</span></label>
+                    <div class="sp-input">
+                        <i class="bi bi-tag"></i>
+                        <input id="edit_TenSP" />
+                    </div>
+
+                    <label class="sp-label">Mô tả</label>
+                    <textarea id="edit_MoTa" class="sp-textarea" rows="6"></textarea>
+
+                    <label class="sp-label">Thêm ảnh mới (nếu muốn)</label>
+                    <input id="edit_File" type="file" accept="image/*" multiple hidden />
+                    <div class="upload-box upload-box-sm" onclick="document.getElementById('edit_File').click()">
+                        <div class="upload-icon"><i class="bi bi-cloud-arrow-up-fill"></i></div>
+                        <div class="upload-text">
+                            <div class="upload-title">Chọn ảnh mới</div>
+                            <div id="edit_FileName" class="upload-filename">Giữ ảnh hiện tại</div>
+                        </div>
+                    </div>
+
+                    <div id="edit_NewPreviewList" class="preview-list empty">Chưa chọn ảnh mới</div>
+
+                    <label class="sp-label mt-6">Ảnh hiện tại</label>
+                    <div id="edit_OldPreviewList" class="preview-list"></div>
+                </div>
+
+                <!-- RIGHT -->
+                <div class="sp-col">
+                    <label class="sp-label">Danh mục <span>*</span></label>
+                    <select id="edit_MaDM" class="sp-select"></select>
+
+                    <label class="sp-label">Thương hiệu <span>*</span></label>
+                    <select id="edit_MaTH" class="sp-select"></select>
+
+                    <label class="sp-label">Khuyến mãi</label>
+                    <select id="edit_MaKM" class="sp-select"></select>
+
+                    <label class="sp-label">Loại</label>
+                    <select id="edit_BienThe" class="sp-select">
+                        <option value="">-- Chọn loại --</option>
+                    </select>
+
+                    <div class="sp-two">
+                        <div>
+                            <label class="sp-label">Giá gốc <span>*</span></label>
+                            <div class="sp-input">
+                                <i class="bi bi-cash"></i>
+                                <input id="edit_Gia" type="number" min="0" />
+                            </div>
+                        </div>
+                        <div>
+                            <label class="sp-label">Tồn kho <span>*</span></label>
+                            <div class="sp-input">
+                                <i class="bi bi-box"></i>
+                                <input id="edit_TonKho" type="number" min="0" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sp-price-preview">
+                        <div>
+                            <div class="sp-price-label">Giá sau giảm</div>
+                            <div id="edit_GiaSauGiamPreview" class="sp-price-value">0 đ</div>
+                        </div>
+                        <div id="edit_PhanTramPreview" class="sp-price-sale green" style="display:none;">-0%</div>
+                    </div>
+
+                    <div class="sp-switch-row">
+                        <div><div class="sp-switch-title">Trạng thái bán</div></div>
+                        <label class="sp-switch">
+                            <input type="checkbox" id="edit_TrangThai" />
+                            <span class="sp-switch-ui"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sp-modal-foot">
+            <button class="sp-btn primary" onclick="saveEdit()">
+                <i class="bi bi-save2"></i> Lưu thay đổi
+            </button>
+
+            <button class="sp-btn ghost" onclick="openAddVariantModal()">
+                <i class="bi bi-plus-circle"></i> Thêm biến thể
+            </button>
+
+            <button class="sp-btn ghost" onclick="hideModal('#editModal')">Hủy</button>
+        </div>
+    </div>
+</div>
+
+<!-- ================== MODAL ADD VARIANT (BEAUTY VERSION) ================== -->
+<div id="addVariantModal" class="sp-modal-backdrop" style="display:none;">
+    <div class="sp-modal slide-in-right sp-modal--variant">
+        <div class="sp-modal-head">
+            <div class="head-left">
+                <div class="sp-modal-badge add">Biến thể mới</div>
+                <h3 class="sp-modal-title">Thêm biến thể cho sản phẩm</h3>
+                <div id="av_TenSP" class="av-subtitle"></div>
+            </div>
+            <button class="sp-modal-close" onclick="hideModal('#addVariantModal')">×</button>
+        </div>
+
+        <input type="hidden" id="av_MaSP" />
+
+        <div class="sp-modal-body">
+            <div class="av-form">
+
+                <!-- TÊN BIẾN THỂ -->
+                <div class="av-row">
+                    <label class="sp-label">Tên biến thể <span>*</span></label>
+                    <div class="sp-input">
+                        <i class="bi bi-layers"></i>
+                        <input id="av_TenBienThe" placeholder="VD: Da dầu, Da khô..." />
+                    </div>
+                </div>
+
+                <!-- GIÁ + TỒN KHO -->
+                <div class="av-row av-two">
+                    <div>
+                        <label class="sp-label">Giá gốc <span>*</span></label>
+                        <div class="sp-input">
+                            <i class="bi bi-cash"></i>
+                            <input id="av_Gia" type="number" min="0" placeholder="0" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="sp-label">Tồn kho <span>*</span></label>
+                        <div class="sp-input">
+                            <i class="bi bi-box"></i>
+                            <input id="av_TonKho" type="number" min="0" placeholder="0" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KHUYẾN MÃI -->
+                <div class="av-row">
+                    <label class="sp-label">Khuyến mãi</label>
+                    <select id="av_MaKM" class="sp-select">
+                        <option value="0" data-discount="0">Không áp dụng</option>
+                    </select>
+                </div>
+
+                <!-- GIÁ SAU GIẢM PREVIEW -->
+                <div class="av-row">
+                    <div class="av-price-preview">
+                        <div class="av-price-left">
+                            <div class="av-price-title">Giá sau giảm</div>
+                            <div id="av_GiaSauGiamPreview" class="av-price-value">0 đ</div>
+                        </div>
+                        <div id="av_PhanTramPreview" class="av-price-sale green" style="display:none;">-0%</div>
+                    </div>
+                </div>
+
+                <!-- ẢNH BIẾN THỂ -->
+                <div class="av-row">
+                    <label class="sp-label">Ảnh biến thể <span>*</span></label>
+                    <input id="av_File" type="file" accept="image/*" multiple hidden />
+                    <div class="upload-box upload-box-sm av-upload"
+                         onclick="document.getElementById('av_File').click()">
+                        <div class="upload-icon"><i class="bi bi-cloud-arrow-up-fill"></i></div>
+                        <div class="upload-text">
+                            <div class="upload-title">Chọn ảnh biến thể</div>
+                            <div class="upload-sub">Có thể chọn nhiều ảnh</div>
+                            <div id="av_FileName" class="upload-filename">Chưa chọn tệp</div>
+                        </div>
+                    </div>
+
+                    <div id="av_PreviewList" class="preview-list empty">Chưa có ảnh</div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="sp-modal-foot av-foot">
+            <button class="sp-btn primary" onclick="saveAddVariant()">
+                <i class="bi bi-check2-circle"></i> Thêm biến thể
+            </button>
+            <button class="sp-btn ghost" onclick="hideModal('#addVariantModal')">Hủy</button>
+        </div>
+    </div>
+</div>
+
+@section scripts{
+    <script>
+        // ===== MODAL COMMON =====
+        function showModal(selector) {
+            const $bg = $(selector);
+            $bg.css("display", "flex");
+            setTimeout(() => $bg.find(".sp-modal").addClass("active"), 10);
+        }
+        function hideModal(selector) {
+            const $bg = $(selector);
+            $bg.find(".sp-modal").removeClass("active");
+            setTimeout(() => $bg.css("display", "none"), 180);
+        }
+
+        // ===== UTIL =====
+        function formatMoney(num) {
+            return (parseFloat(num || 0)).toLocaleString('vi-VN') + " đ";
+        }
+        function removeNull(x) { return (x === null || x === undefined) ? "" : x; }
+
+        function applyStatusChip($el, isActive) {
+            $el.removeClass("is-active is-inactive");
+            $el.addClass(isActive ? "is-active" : "is-inactive");
+            $el.text(isActive ? "Còn bán" : "Ngừng bán");
+        }
+
+        // ===== SEARCH =====
+        $("#btnSearch").click(function () {
+            let kw = $("#searchBox").val().trim();
+            window.location.href = "/Admin/SanPham?search=" + encodeURIComponent(kw);
+        });
+        $("#searchBox").keypress(function (e) {
+            if (e.which === 13) $("#btnSearch").click();
+        });
+
+        // ================= PREVIEW MULTI FILE ADD =================
+        let addFiles = [];
+        $("#add_File").on("change", function () {
+            addFiles = Array.from(this.files || []);
+            renderPreviewList("#add_PreviewList", addFiles, true);
+            $("#add_FileName").text(addFiles.length ? `${addFiles.length} ảnh đã chọn` : "Chưa chọn tệp");
+        });
+
+        // ================= PREVIEW MULTI FILE EDIT =================
+        let editNewFiles = [];
+        $("#edit_File").on("change", function () {
+            editNewFiles = Array.from(this.files || []);
+            renderPreviewList("#edit_NewPreviewList", editNewFiles, true);
+            $("#edit_FileName").text(editNewFiles.length ? `${editNewFiles.length} ảnh mới` : "Giữ ảnh hiện tại");
+        });
+
+        function renderPreviewList(selector, files, showRemoveBtn) {
+            const box = $(selector);
+            box.empty().removeClass("empty");
+
+            if (!files || files.length === 0) {
+                box.addClass("empty").text("Chưa có ảnh");
+                return;
+            }
+
+            files.forEach((f, idx) => {
+                const url = URL.createObjectURL(f);
+                box.append(`
+                                <div class="preview-item">
+                                    <img src="${url}" />
+                                    ${showRemoveBtn ? `<button class="remove-x" type="button" onclick="removeLocalFile('${selector}', ${idx})">×</button>` : ``}
+                                </div>
+                            `);
+            });
+        }
+
+        function removeLocalFile(selector, idx) {
+            if (selector === "#add_PreviewList") {
+                addFiles.splice(idx, 1);
+                renderPreviewList(selector, addFiles, true);
+                $("#add_FileName").text(addFiles.length ? `${addFiles.length} ảnh đã chọn` : "Chưa chọn tệp");
+            } else {
+                editNewFiles.splice(idx, 1);
+                renderPreviewList(selector, editNewFiles, true);
+                $("#edit_FileName").text(editNewFiles.length ? `${editNewFiles.length} ảnh mới` : "Giữ ảnh hiện tại");
+            }
+        }
+
+        // ===== DROPDOWNS =====
+        function loadDropdowns(callback) {
+            let dmDone = false, thDone = false, kmDone = false;
+
+            $.get("/Admin/SanPham/GetDanhMuc", function (list) {
+                $("#add_MaDM,#edit_MaDM").empty().append(`<option value="">-- Chọn danh mục --</option>`);
+                list.forEach(x => $("#add_MaDM,#edit_MaDM").append(`<option value="${x.MaDM}">${x.TenDM}</option>`));
+                dmDone = true; if (dmDone && thDone && kmDone && callback) callback();
+            });
+
+            $.get("/Admin/SanPham/GetThuongHieu", function (list) {
+                $("#add_MaTH,#edit_MaTH").empty().append(`<option value="">-- Chọn thương hiệu --</option>`);
+                list.forEach(x => $("#add_MaTH,#edit_MaTH").append(`<option value="${x.MaTH}">${x.TenThuongHieu}</option>`));
+                thDone = true; if (dmDone && thDone && kmDone && callback) callback();
+            });
+
+            $.get("/Admin/SanPham/GetKhuyenMai", function (list) {
+                $("#add_MaKM,#edit_MaKM").empty()
+                    .append(`<option value="" data-discount="0">Không áp dụng</option>`);
+
+                list.forEach(x => {
+                    $("#add_MaKM,#edit_MaKM")
+                        .append(`<option value="${x.MaKM}" data-discount="${x.PhanTramGiam || 0}">
+                                        ${x.TenKhuyenMai} (${x.PhanTramGiam || 0}%)
+                                    </option>`);
+                });
+
+                kmDone = true; if (dmDone && thDone && kmDone && callback) callback();
+            });
+        }
+
+        // ===== BIẾN THỂ =====
+        function loadBienTheAdd() {
+            let maDM = $("#add_MaDM").val();
+            if (!maDM) return;
+            $.get("/Admin/SanPham/GetLoaiBienThe", { maDM }, function (data) {
+                $("#add_BienThe").empty().append(`<option value="">-- Chọn loại --</option>`);
+                data.forEach(bt => $("#add_BienThe").append(`<option value="${bt}">${bt}</option>`));
+            });
+        }
+
+        function loadBienTheEdit(maDM, selected) {
+            if (!maDM) maDM = $("#edit_MaDM").val();
+            if (!maDM) return;
+            $.get("/Admin/SanPham/GetLoaiBienThe", { maDM }, function (data) {
+                $("#edit_BienThe").empty().append(`<option value="">-- Chọn loại --</option>`);
+                data.forEach(bt => $("#edit_BienThe").append(`<option value="${bt}">${bt}</option>`));
+                if (selected) $("#edit_BienThe").val(selected);
+            });
+        }
+        $("#add_MaDM").change(loadBienTheAdd);
+        $("#edit_MaDM").change(() => loadBienTheEdit());
+
+        // ===== PRICE PREVIEW (ADD/EDIT) =====
+        function calcPreview(prefix) {
+            let giaGoc = parseFloat($(`#${prefix}_Gia`).val() || 0);
+            let pt = parseFloat($(`#${prefix}_MaKM option:selected`).data("discount") || 0);
+
+            let giaSau = giaGoc;
+            if (pt > 0) giaSau = giaGoc * (100 - pt) / 100;
+
+            $(`#${prefix}_GiaSauGiamPreview`).text(formatMoney(giaSau));
+            if (pt > 0) {
+                $(`#${prefix}_PhanTramPreview`).text(`-${pt}%`).show();
+            } else {
+                $(`#${prefix}_PhanTramPreview`).hide();
+            }
+        }
+        $("#add_Gia, #add_MaKM").on("input change", () => calcPreview("add"));
+        $("#edit_Gia, #edit_MaKM").on("input change", () => calcPreview("edit"));
+
+        // ===== OPEN ADD =====
+        function openAddModal() {
+            loadDropdowns(function () {
+                $("#add_TenSP,#add_MoTa,#add_Gia,#add_TonKho").val("");
+                $("#add_File").val("");
+                addFiles = [];
+                $("#add_FileName").text("Chưa chọn tệp");
+                $("#add_PreviewList").addClass("empty").text("Chưa có ảnh");
+
+                $("#add_TrangThai").prop("checked", true);
+                $("#add_MaKM").val("");
+                $("#add_MaDM,#add_MaTH").val("");
+                loadBienTheAdd();
+                calcPreview("add");
+                showModal("#addModal");
+            });
+        }
+
+        // ===== VIEW slider data =====
+        let viewImages = [];
+        let viewIdx = 0;
+
+        function renderThumbs(prefix, images) {
+            const thumbs = $(`#${prefix}_Thumbs`);
+            thumbs.empty();
+            if (!images || images.length === 0) return;
+
+            images.forEach((img, i) => {
+                thumbs.append(`
+                                <div class="thumb-wrap" onclick="setSlide('${prefix}', ${i})">
+                                    <img class="thumb ${i == 0 ? 'active' : ''}" src="${img.Url}" />
+                                    <div class="thumb-label">${img.TenBienThe || "Default"}</div>
+                                </div>
+                            `);
+            });
+        }
+
+        function setSlide(prefix, i) {
+            if (prefix !== 'v') return;
+            if (!viewImages.length) return;
+
+            viewIdx = i;
+            const cur = viewImages[viewIdx];
+            $("#v_Image").attr("src", cur.Url);
+
+            $("#v_BienThe").text(cur.TenBienThe || "Default");
+
+            let giaGoc = parseFloat(cur.Gia || 0);
+            let pt = parseFloat($("#v_PhanTram").data("pt") || 0);
+            let giaSau = giaGoc;
+
+            if (pt > 0) giaSau = giaGoc * (100 - pt) / 100;
+
+            $("#v_GiaGoc").text(formatMoney(giaGoc));
+            $("#v_GiaSauGiam").text(formatMoney(giaSau));
+            $("#v_TonKho").text(cur.TonKho || 0);
+
+            $(`#${prefix}_Thumbs .thumb`).removeClass("active").eq(i).addClass("active");
+        }
+
+        function slidePrev(prefix) {
+            if (prefix !== 'v') return;
+            if (!viewImages.length) return;
+            viewIdx = (viewIdx - 1 + viewImages.length) % viewImages.length;
+            setSlide(prefix, viewIdx);
+        }
+
+        function slideNext(prefix) {
+            if (prefix !== 'v') return;
+            if (!viewImages.length) return;
+            viewIdx = (viewIdx + 1) % viewImages.length;
+            setSlide(prefix, viewIdx);
+        }
+
+        // ===== VIEW =====
+        function viewProduct(id) {
+            $.get("/Admin/SanPham/GetProduct", { id }, function (data) {
+                if (!data) return;
+
+                $("#v_MaSP").text("SP" + ("00" + data.MaSP).slice(-3));
+                $("#v_TenSP").text(removeNull(data.TenSP));
+
+                viewImages = data.Images || [];
+                viewIdx = 0;
+
+                $("#v_Image").attr("src", viewImages[0]?.Url || "/images/no-image.png");
+                renderThumbs("v", viewImages);
+
+                $("#v_DanhMuc").text(removeNull(data.DanhMuc) || "-");
+                $("#v_ThuongHieu").text(removeNull(data.ThuongHieu) || "-");
+                $("#v_KhuyenMai").text(removeNull(data.KhuyenMai) || "Không áp dụng");
+
+                let pt = parseFloat(data.PhanTramGiam || 0);
+                $("#v_PhanTram").data("pt", pt);
+
+                if (viewImages.length) {
+                    $("#v_BienThe").text(viewImages[0].TenBienThe || "Default");
+                    $("#v_TonKho").text(viewImages[0].TonKho || 0);
+
+                    let giaGoc = parseFloat(viewImages[0].Gia || 0);
+                    let giaSau = giaGoc;
+                    if (pt > 0) giaSau = giaGoc * (100 - pt) / 100;
+
+                    $("#v_GiaGoc").text(formatMoney(giaGoc));
+                    $("#v_GiaSauGiam").text(formatMoney(giaSau));
+                }
+
+                if (pt > 0) $("#v_PhanTram").text(`-${pt}%`).show();
+                else $("#v_PhanTram").hide();
+
+                $("#v_MoTa").html(data.MoTa || "Không có mô tả");
+
+                applyStatusChip($("#v_StatusChip"), data.TrangThai === true);
+                showModal("#viewModal");
+            });
+        }
+
+        // ===== EDIT =====
+        function editProduct(id) {
+            loadDropdowns(function () {
+                $.get("/Admin/SanPham/GetProduct", { id }, function (data) {
+                    if (!data) return;
+
+                    $("#edit_MaSP").val(data.MaSP);
+                    $("#edit_TenSP").val(data.TenSP);
+                    $("#edit_MoTa").val(data.MoTa);
+                    $("#edit_Gia").val(data.Gia);
+                    $("#edit_TonKho").val(data.TonKho);
+
+                    $("#edit_File").val("");
+                    editNewFiles = [];
+                    $("#edit_FileName").text("Giữ ảnh hiện tại");
+                    $("#edit_NewPreviewList").addClass("empty").text("Chưa chọn ảnh mới");
+
+                    $("#edit_TrangThai").prop("checked", data.TrangThai === true);
+
+                    const oldBox = $("#edit_OldPreviewList");
+                    oldBox.empty();
+                    (data.Images || []).forEach(img => {
+                        oldBox.append(`
+                                        <div class="preview-item old" data-id="${img.Id}">
+                                            <img src="${img.Url}" />
+                                            <button class="remove-x red" type="button"
+                                                    onclick="deleteOldImage(${img.Id}, this)">×</button>
+                                        </div>
+                                    `);
+                    });
+
+                    setTimeout(function () {
+                        $("#edit_MaDM").val(data.MaDM);
+                        $("#edit_MaTH").val(data.MaTH);
+                        $("#edit_MaKM").val(data.MaKM);
+                        loadBienTheEdit(data.MaDM, data.TenBienThe);
+                        calcPreview("edit");
+                    }, 80);
+
+                    showModal("#editModal");
+                });
+            });
+        }
+
+        function deleteOldImage(imgId, btn) {
+            Swal.fire({
+                title: "Xóa ảnh?",
+                text: "Bạn chắc chắn muốn xóa ảnh này?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Xóa",
+                cancelButtonText: "Hủy"
+            }).then(rs => {
+                if (!rs.isConfirmed) return;
+
+                $.post("/Admin/SanPham/DeleteImage", { id: imgId }, function (res) {
+                    if (res && res.success) {
+                        $(btn).closest(".preview-item").remove();
+                        Swal.fire("Đã xóa!", "", "success");
+                    } else {
+                        Swal.fire("Lỗi!", "Không xóa được ảnh.", "error");
+                    }
+                });
+            });
+        }
+
+        // ===== VALIDATE =====
+        function validate(prefix) {
+            let ten = $(`#${prefix}_TenSP`).val().trim();
+            let gia = parseFloat($(`#${prefix}_Gia`).val() || 0);
+            let ton = parseInt($(`#${prefix}_TonKho`).val() || 0);
+            let maDM = $(`#${prefix}_MaDM`).val();
+            let maTH = $(`#${prefix}_MaTH`).val();
+
+            if (!ten) { Swal.fire("Thiếu tên!", "Bạn chưa nhập tên sản phẩm.", "warning"); return false; }
+            if (!maDM) { Swal.fire("Thiếu danh mục!", "Vui lòng chọn danh mục.", "warning"); return false; }
+            if (!maTH) { Swal.fire("Thiếu thương hiệu!", "Vui lòng chọn thương hiệu.", "warning"); return false; }
+            if (gia <= 0) { Swal.fire("Giá sai!", "Giá phải lớn hơn 0.", "warning"); return false; }
+            if (ton < 0) { Swal.fire("Tồn kho sai!", "Tồn kho không được âm.", "warning"); return false; }
+            return true;
+        }
+
+        // ===== SAVE ADD =====
+        function saveAdd() {
+            if (!validate("add")) return;
+
+            if (!addFiles.length) {
+                Swal.fire("Thiếu ảnh!", "Vui lòng chọn ít nhất 1 ảnh.", "warning");
+                return;
+            }
+
+            const fd = new FormData();
+            fd.append("TenSP", $("#add_TenSP").val().trim());
+            fd.append("MoTa", $("#add_MoTa").val().trim());
+            fd.append("MaDM", $("#add_MaDM").val());
+            fd.append("MaTH", $("#add_MaTH").val());
+            fd.append("MaKM", $("#add_MaKM").val());
+            fd.append("Gia", $("#add_Gia").val());
+            fd.append("TonKho", $("#add_TonKho").val());
+            fd.append("TrangThai", $("#add_TrangThai").is(":checked"));
+            fd.append("TenBienThe", $("#add_BienThe").val());
+            addFiles.forEach(f => fd.append("ImageFiles", f));
+
+            $.ajax({
+                url: "/Admin/SanPham/AddProduct",
+                method: "POST",
+                data: fd,
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.success) {
+                        hideModal("#addModal");
+                        Swal.fire("Thành công!", "Đã thêm sản phẩm.", "success")
+                            .then(() => location.reload());
+                    } else {
+                        Swal.fire("Lỗi!", res.message || "Không thể thêm sản phẩm!", "error");
+                    }
+                }
+            });
+        }
+
+        // ===== SAVE EDIT =====
+        function saveEdit() {
+            if (!validate("edit")) return;
+
+            const fd = new FormData();
+            fd.append("MaSP", $("#edit_MaSP").val());
+            fd.append("TenSP", $("#edit_TenSP").val().trim());
+            fd.append("MoTa", $("#edit_MoTa").val().trim());
+            fd.append("MaDM", $("#edit_MaDM").val());
+            fd.append("MaTH", $("#edit_MaTH").val());
+            fd.append("MaKM", $("#edit_MaKM").val());
+            fd.append("Gia", $("#edit_Gia").val());
+            fd.append("TonKho", $("#edit_TonKho").val());
+            fd.append("TrangThai", $("#edit_TrangThai").is(":checked"));
+            fd.append("TenBienThe", $("#edit_BienThe").val());
+
+            if (editNewFiles.length) editNewFiles.forEach(f => fd.append("ImageFiles", f));
+
+            $.ajax({
+                url: "/Admin/SanPham/UpdateProduct",
+                method: "POST",
+                data: fd,
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.success) {
+                        hideModal("#editModal");
+                        Swal.fire("Thành công!", "Đã cập nhật sản phẩm.", "success")
+                            .then(() => location.reload());
+                    } else {
+                        Swal.fire("Lỗi!", res.message || "Không thể cập nhật!", "error");
+                    }
+                }
+            });
+        }
+
+        // ===== DELETE PRODUCT =====
+        function deleteProduct(id) {
+            Swal.fire({
+                title: "Xóa sản phẩm?",
+                text: "Bạn có chắc muốn xóa sản phẩm này không?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#E76F51",
+                cancelButtonColor: "#6c757d",
+                confirmButtonText: "Xóa",
+                cancelButtonText: "Hủy"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post("/Admin/SanPham/DeleteProduct", { id }, function (res) {
+                        if (res.success) {
+                            Swal.fire("Đã xóa!", "Sản phẩm đã được xóa.", "success")
+                                .then(() => location.reload());
+                        } else Swal.fire("Lỗi!", "Không thể xóa sản phẩm!", "error");
+                    });
+                }
+            });
+        }
+
+        // ================= ADD VARIANT =================
+        let avFiles = [];
+
+        function openAddVariantModal() {
+            const maSP = $("#edit_MaSP").val();
+            const tenSP = $("#edit_TenSP").val();
+
+            $("#av_MaSP").val(maSP);
+            $("#av_TenSP").text(tenSP);
+
+            $("#av_TenBienThe,#av_Gia,#av_TonKho").val("");
+            $("#av_File").val("");
+            avFiles = [];
+            $("#av_FileName").text("Chưa chọn tệp");
+            $("#av_PreviewList").addClass("empty").text("Chưa có ảnh");
+
+            loadKhuyenMaiVariant("0"); // ✅ load km + preview ngay
+            showModal("#addVariantModal");
+
+            // ✅ load khuyến mãi cho variant
+            $.get("/Admin/SanPham/GetKhuyenMai", function (list) {
+                $("#av_MaKM").empty()
+                    .append(`<option value="0" data-discount="0">Không áp dụng</option>`);
+                list.forEach(x => {
+                    $("#av_MaKM").append(`
+                                    <option value="${x.MaKM}" data-discount="${x.PhanTramGiam || 0}">
+                                        ${x.TenKhuyenMai} (${x.PhanTramGiam || 0}%)
+                                    </option>
+                                `);
+                });
+                calcVariantPreview();
+            });
+
+            showModal("#addVariantModal");
+        }
+
+        $("#av_File").on("change", function () {
+            avFiles = Array.from(this.files || []);
+            renderPreviewList("#av_PreviewList", avFiles, true);
+            $("#av_FileName").text(avFiles.length ? `${avFiles.length} ảnh đã chọn` : "Chưa chọn tệp");
+        });
+
+        function calcVariantPreview() {
+            let giaGoc = parseFloat($("#av_Gia").val() || 0);
+            let pt = parseFloat($("#av_MaKM option:selected").data("discount") || 0);
+            let giaSau = giaGoc;
+            if (pt > 0) giaSau = giaGoc * (100 - pt) / 100;
+
+            $("#av_GiaSauGiamPreview").text(formatMoney(giaSau));
+            if (pt > 0) {
+                $("#av_PhanTramPreview").text(`-${pt}%`).show();
+            } else {
+                $("#av_PhanTramPreview").hide();
+            }
+        }
+
+        $("#av_Gia, #av_MaKM").on("input change", calcVariantPreview);
+
+        function saveAddVariant() {
+            let ten = $("#av_TenBienThe").val().trim();
+            let gia = parseFloat($("#av_Gia").val() || 0);
+            let ton = parseInt($("#av_TonKho").val() || 0);
+            let maSP = $("#av_MaSP").val();
+            let maKM = $("#av_MaKM").val();
+
+            if (!ten) { Swal.fire("Thiếu tên biến thể!", "", "warning"); return; }
+            if (gia <= 0) { Swal.fire("Giá phải > 0!", "", "warning"); return; }
+            if (ton < 0) { Swal.fire("Tồn kho không được âm!", "", "warning"); return; }
+            if (!avFiles.length) { Swal.fire("Chọn ít nhất 1 ảnh!", "", "warning"); return; }
+
+            const fd = new FormData();
+            fd.append("MaSP", maSP);
+            fd.append("TenBienThe", ten);
+            fd.append("Gia", gia);
+            fd.append("TonKho", ton);
+            fd.append("MaKM", maKM); // ✅ nếu backend chưa nhận cũng không sao (binder ignore)
+
+            avFiles.forEach(f => fd.append("ImageFiles", f));
+
+            $.ajax({
+                url: "/Admin/SanPham/AddVariant",
+                method: "POST",
+                data: fd,
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.success) {
+                        hideModal("#addVariantModal");
+                        Swal.fire("Thành công!", "Đã thêm biến thể.", "success")
+                            .then(() => location.reload());
+                    } else {
+                        Swal.fire("Lỗi!", res.message || "Không thể thêm biến thể!", "error");
+                    }
+                }
+            });
+        }
+        // ===== load KM cho variant modal =====
+        function loadKhuyenMaiVariant(selected = "0") {
+            $.get("/Admin/SanPham/GetKhuyenMai", function (list) {
+                const $km = $("#av_MaKM");
+                $km.empty().append(`<option value="0" data-discount="0">Không áp dụng</option>`);
+
+                list.forEach(x => {
+                    $km.append(`<option value="${x.MaKM}" data-discount="${x.PhanTramGiam || 0}">
+                        ${x.TenKhuyenMai} (${x.PhanTramGiam || 0}%)
+                    </option>`);
+                });
+
+                $km.val(selected);
+                calcPreviewVariant();
+            });
+        }
+
+        // ===== tính giá sau giảm cho variant =====
+        function calcPreviewVariant() {
+            let giaGoc = parseFloat($("#av_Gia").val() || 0);
+            let pt = parseFloat($("#av_MaKM option:selected").data("discount") || 0);
+
+            let giaSau = giaGoc;
+            if (pt > 0) giaSau = giaGoc * (100 - pt) / 100;
+
+            $("#av_GiaSauGiamPreview").text(formatMoney(giaSau));
+            if (pt > 0) {
+                $("#av_PhanTramPreview").text(`-${pt}%`).show();
+            } else {
+                $("#av_PhanTramPreview").hide();
+            }
+        }
+
+        $("#av_Gia, #av_MaKM").on("input change", calcPreviewVariant);
+    </script>
+}

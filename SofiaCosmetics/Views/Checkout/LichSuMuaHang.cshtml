@@ -1,0 +1,127 @@
+﻿@model IEnumerable<SofiaCosmetics.Models.DONHANG>
+@{
+    ViewBag.Title = "Lịch sử mua hàng";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .order-wrapper {
+        max-width: 900px;
+        margin: 25px auto;
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .order-title {
+        font-size: 26px;
+        font-weight: 700;
+        margin-bottom: 20px;
+        color: #e91e63;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+        .order-title i {
+            font-size: 30px;
+        }
+
+    .table thead {
+        background: #ffe4ec;
+    }
+
+    .status-badge {
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 13px;
+    }
+
+    .status-wait {
+        background: #ffeb99;
+        color: #a87800;
+    }
+
+    .status-paid {
+        background: #c8ffd4;
+        color: #0f8a2e;
+    }
+
+    .status-cancel {
+        background: #ffd4d4;
+        color: #b80000;
+    }
+
+    .btn-detail {
+        padding: 6px 14px;
+        background: #ff91ad;
+        color: #fff;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 600;
+        transition: .2s;
+    }
+
+        .btn-detail:hover {
+            background: #ff91ad;
+        }
+</style>
+
+
+<div class="order-wrapper">
+
+    <h3 class="order-title">
+        <i class="lni lni-cart-full"></i> Lịch sử mua hàng
+    </h3>
+
+    @if (!Model.Any())
+    {
+        <p class="text-muted">Bạn chưa có đơn hàng nào.</p>
+    }
+    else
+    {
+        <table class="table table-bordered align-middle">
+            <thead>
+                <tr>
+                    <th>Mã đơn</th>
+                    <th>Ngày đặt</th>
+                    <th>Tổng tiền</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach (var order in Model)
+                {
+                    string statusClass = order.TrangThai == "Chờ xác nhận" ? "status-wait"
+                                        : order.TrangThai == "Đã thanh toán" ? "status-paid"
+                                        : "status-cancel";
+
+                    <tr>
+                        <td>#@order.MaDH</td>
+
+                        <td>@(order.NgayDat?.ToString("dd/MM/yyyy HH:mm"))</td>
+
+                        <td>@(order.TongTien?.ToString("N0")) đ</td>
+
+                        <td>
+                            <span class="status-badge @statusClass">
+                                @order.TrangThai
+                            </span>
+                        </td>
+
+                        <td>
+                            <a href="@Url.Action("OrderDetails", "Checkout", new { id = order.MaDH })"
+                               class="btn-detail">
+                                Xem chi tiết
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+</div>
+

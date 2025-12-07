@@ -1,0 +1,287 @@
+﻿@model SofiaCosmetics.Models.TINTUC
+@using System.Web
+@using System.Text.RegularExpressions
+@using System.Linq
+@using System.Collections.Generic
+<link href="~/Content/chinhsachgiaohang.css" rel="stylesheet" />
+@{
+    ViewBag.Title = Model.TenTrang;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    string rawHtml = HttpUtility.HtmlDecode(Model.NoiDung ?? "");
+
+    Func<string, string> StripHtml = s =>
+        string.IsNullOrWhiteSpace(s) ? "" : Regex.Replace(s, "<[^>]*>", "").Trim();
+
+    Func<string, string> Norm = s =>
+        (s ?? "").Replace("\r\n", "\n").Replace("\r", "\n").Trim();
+
+    Func<string, List<string>> SplitBlocks = s =>
+    {
+        var t = Norm(StripHtml(s));
+        if (string.IsNullOrWhiteSpace(t)) return new List<string>();
+        t = Regex.Replace(t, @"^\s*---\s*$", "\n---\n", RegexOptions.Multiline);
+        return Regex.Split(t, @"(?:^|\n)\s*---\s*(?:\n|$)")
+                    .Select(b => b.Trim())
+                    .Where(b => !string.IsNullOrWhiteSpace(b))
+                    .ToList();
+    };
+
+    bool hasSeparator = Regex.IsMatch(Norm(StripHtml(rawHtml)), @"(?:^|\n)\s*---\s*(?:\n|$)");
+
+    Func<List<string>, List<(string title, string desc)>> ParsePairList = lines =>
+    {
+        var res = new List<(string, string)>();
+        foreach (var ln in lines)
+        {
+            var s = ln.Trim();
+            s = Regex.Replace(s, @"^\d+\.\s*", "");
+            s = Regex.Replace(s, @"^-\s*", "");
+            if (string.IsNullOrWhiteSpace(s)) continue;
+
+            var parts = s.Split(new[] { "|" }, 2, System.StringSplitOptions.None)
+                         .Select(p => p.Trim()).ToArray();
+
+            var title = parts.ElementAtOrDefault(0) ?? "";
+            var desc = parts.ElementAtOrDefault(1) ?? "";
+            if (!string.IsNullOrWhiteSpace(title))
+                res.Add((title, desc));
+        }
+        return res;
+    };
+
+    Func<List<string>, List<string[]>> ParseTableRows = lines =>
+    {
+        var res = new List<string[]>();
+        foreach (var ln in lines)
+        {
+            var s = ln.Trim();
+            s = Regex.Replace(s, @"^\d+\.\s*", "");
+            s = Regex.Replace(s, @"^-\s*", "");
+            if (string.IsNullOrWhiteSpace(s)) continue;
+
+            var parts = s.Split('|').Select(x => x.Trim()).ToArray();
+            if (parts.Length >= 2) res.Add(parts);
+        }
+        return res;
+    };
+
+    var blocks = hasSeparator ? SplitBlocks(rawHtml) : new List<string>();
+
+    // HERO
+    var heroLines = blocks.ElementAtOrDefault(0) != null
+        ? Norm(blocks[0]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+    string heroTitle = heroLines.ElementAtOrDefault(0) ?? "CHÍNH SÁCH GIAO HÀNG";
+    string heroDesc = heroLines.ElementAtOrDefault(1) ?? "SofiaCosmetics luôn cố gắng giao hàng nhanh và an toàn, đồng thời cập nhật rõ ràng để bạn yên tâm mua sắm.";
+
+    // 3 cards nhỏ
+    var cardLines = blocks.ElementAtOrDefault(1) != null
+        ? Norm(blocks[1]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+    var cards = ParsePairList(cardLines);
+    if (cards.Count == 0)
+    {
+        cards = new List<(string, string)>{
+            ("Phạm vi giao hàng","Giao hàng toàn quốc, hỗ trợ kiểm tra khi nhận."),
+            ("Thời gian dự kiến","Nội thành 1–2 ngày, ngoại tỉnh 3–5 ngày."),
+            ("Thanh toán","Hỗ trợ COD hoặc chuyển khoản trước.")
+        };
+    }
+    var cardIcons = new[] { "bi-truck", "bi-clock-history", "bi-cash-coin" };
+
+    // Steps
+    var stepLines = blocks.ElementAtOrDefault(2) != null
+        ? Norm(blocks[2]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+    var steps = ParsePairList(stepLines);
+    if (steps.Count == 0)
+    {
+        steps = new List<(string, string)>{
+            ("Bước 1","Tiếp nhận & kiểm tra đơn hàng (ghi nhận đơn trên hệ thống, kiểm tra tồn kho/sản phẩm)."),
+            ("Bước 2","Đóng gói hàng chính hãng, niêm phong cẩn thận."),
+            ("Bước 3","Bàn giao đơn vị vận chuyển."),
+            ("Bước 4","Ship COD — nhận hàng kiểm tra trước khi thanh toán.")
+        };
+    }
+
+    // Time table
+    var timeLines = blocks.ElementAtOrDefault(3) != null
+        ? Norm(blocks[3]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+    var timeRows = ParseTableRows(timeLines);
+    if (timeRows.Count == 0)
+    {
+        timeRows = new List<string[]>{
+            new[] {"Nội thành Thủ Dầu Một / Bình Dương", "1 – 2 ngày", "Tính từ lúc xác nhận đơn"},
+            new[] {"TP.HCM / Đồng Nai / Tây Ninh / Long An / Bình Phước", "2 – 3 ngày", "Có thể nhanh hơn tuỳ tuyến"},
+            new[] {"Các tỉnh khác", "3 – 5 ngày", "Vùng xa +1–2 ngày"}
+        };
+    }
+
+    // Fee table
+    var feeLines = blocks.ElementAtOrDefault(4) != null
+        ? Norm(blocks[4]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+    var feeRows = ParseTableRows(feeLines);
+    if (feeRows.Count == 0)
+    {
+        feeRows = new List<string[]>{
+            new[] {"Dưới 299.000đ", "25.000đ", "30.000đ"},
+            new[] {"Từ 299.000đ – 499.000đ", "15.000đ", "20.000đ"},
+            new[] {"Từ 499.000đ trở lên", "Miễn phí", "Miễn phí"}
+        };
+    }
+
+    // Fail cases
+    var failLines = blocks.ElementAtOrDefault(5) != null
+        ? Norm(blocks[5]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+    if (failLines.Count == 0)
+    {
+        failLines = new List<string>{
+            "Không liên hệ được: Shipper gọi 2–3 lần không nghe.",
+            "Sai địa chỉ: Nếu địa chỉ không chính xác, đơn sẽ bị hoàn trả.",
+            "Từ chối nhận hàng: Không áp dụng đổi/hoàn hàng khi đã mở niêm phong."
+        };
+    }
+
+    // FAQ
+    var faqLines = blocks.ElementAtOrDefault(6) != null
+        ? Norm(blocks[6]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+    var faq = ParsePairList(faqLines);
+    if (faq.Count == 0)
+    {
+        faq = new List<(string, string)>{
+            ("Kiểm tra hàng trước khi trả tiền?","Có. Bạn được kiểm tra ngoại quan, seal/tem trước khi thanh toán."),
+            ("Đơn bị trễ thì sao?","Vui lòng nhắn Hotline/Zalo để tụi mình kiểm tra ngay."),
+            ("Có giao hỏa tốc không?","Hiện Sofia hỗ trợ hỏa tốc nội thành theo từng khu vực.")
+        };
+    }
+
+    // Quick contact
+    var contactLines = blocks.ElementAtOrDefault(7) != null
+        ? Norm(blocks[7]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+    string hotline = contactLines.ElementAtOrDefault(0) ?? "0696 784 401";
+    string email = contactLines.ElementAtOrDefault(1) ?? "support@sofiacosmetics.vn";
+    string mess = contactLines.ElementAtOrDefault(2) ?? "m.me/sofiacosmetics";
+    string addr = contactLines.ElementAtOrDefault(3) ?? "D6 Trần Văn Ơn, Phú Hòa, Thủ Dầu Một, Bình Dương";
+}
+
+<div class="sf-static container">
+
+    <h2 class="sf-static__title">@Model.TenTrang</h2>
+    <div class="sf-static__line"></div>
+
+    <section class="ship-hero">
+        <div class="ship-hero__icon"><i class="bi bi-truck"></i></div>
+        <h1>@heroTitle</h1>
+        <p>@heroDesc</p>
+    </section>
+
+    <section class="ship-features">
+        @for (int i = 0; i < cards.Count; i++)
+        {
+            var c = cards[i];
+            var icon = cardIcons.ElementAtOrDefault(i) ?? "bi-stars";
+            <div class="ship-feature">
+                <div class="ship-feature__icon"><i class="bi @icon"></i></div>
+                <h3>@c.title</h3>
+                <p>@c.desc</p>
+            </div>
+        }
+    </section>
+
+    <section class="ship-section">
+        <h3 class="ship-section__title">Quy trình giao hàng</h3>
+        <div class="ship-steps">
+            @for (int i = 0; i < steps.Count; i++)
+            {
+                var st = steps[i];
+                <div class="ship-step">
+                    <div class="ship-step__num">@(i+1)</div>
+                    <div class="ship-step__body">
+                        <b>@st.title</b>
+                        <p>@st.desc</p>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+
+    <section class="ship-grid-2 ship-section">
+        <div>
+            <h3 class="ship-section__title">Thời gian giao hàng dự kiến</h3>
+            <div class="ship-table">
+                <div class="ship-table__head">
+                    <span>Khu vực</span><span>Thời gian</span><span>Ghi chú</span>
+                </div>
+                @foreach (var r in timeRows)
+                {
+                    <div class="ship-table__row">
+                        <span>@r.ElementAtOrDefault(0)</span>
+                        <span>@r.ElementAtOrDefault(1)</span>
+                        <span>@r.ElementAtOrDefault(2)</span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div>
+            <h3 class="ship-section__title">Phí vận chuyển</h3>
+            <div class="ship-table">
+                <div class="ship-table__head">
+                    <span>Đơn hàng</span><span>Nội thành</span><span>Ngoại tỉnh</span>
+                </div>
+                @foreach (var r in feeRows)
+                {
+                    <div class="ship-table__row">
+                        <span>@r.ElementAtOrDefault(0)</span>
+                        <span>@r.ElementAtOrDefault(1)</span>
+                        <span>@r.ElementAtOrDefault(2)</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <section class="ship-grid-2 ship-section">
+        <div>
+            <h3 class="ship-section__title">Trường hợp giao hàng không thành công</h3>
+            <ul class="ship-list">
+                @foreach (var it in failLines)
+                {
+                    var txt = Regex.Replace(it, @"^-\s*", "");
+                    <li>@txt</li>
+                }
+            </ul>
+        </div>
+
+        <div>
+            <h3 class="ship-section__title">Câu hỏi thường gặp</h3>
+            <div class="ship-faq">
+                @for (int i = 0; i < faq.Count; i++)
+                {
+                    var qa = faq[i];
+                    <details class="ship-faq__item" @(i == 0 ? "open" : "")>
+                        <summary>@qa.title</summary>
+                        <div class="ship-faq__ans">@qa.desc</div>
+                    </details>
+                }
+            </div>
+        </div>
+    </section>
+
+    <section class="ship-contact ship-section">
+        <h3>Liên hệ hỗ trợ giao hàng</h3>
+        <div class="ship-contact__grid">
+            <div class="ship-contact__item"><span>Hotline/Zalo</span><b>@hotline</b></div>
+            <div class="ship-contact__item"><span>Email</span><b>@email</b></div>
+            <div class="ship-contact__item"><span>Messenger</span><b>@mess</b></div>
+            <div class="ship-contact__item"><span>Địa chỉ</span><b>@addr</b></div>
+        </div>
+        <div class="ship-contact__note">SofiaCosmetics cảm ơn bạn vì luôn tin tưởng mua sắm cùng tụi mình 💗</div>
+    </section>
+</div>

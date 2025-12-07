@@ -1,0 +1,343 @@
+﻿@model IEnumerable<SofiaCosmetics.Models.AdminModels.AdminThuongHieu>
+@section styles{
+    <link href="~/Content/admin-thuonghieu.css" rel="stylesheet" />
+}
+@{
+    ViewBag.Title = "Quản lý thương hiệu";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<div class="top-action-bar">
+    <h2 class="page-title">Quản lý thương hiệu</h2>
+
+    <div class="search-area">
+        <input type="text" id="searchBox" placeholder="Tìm kiếm thương hiệu..." value="@ViewBag.Search" />
+        <button class="btn-search" id="btnSearch">
+            <i class="bi bi-search"></i>
+        </button>
+        <a href="/Admin/ThuongHieu" class="btn-reset">
+            <i class="bi bi-arrow-clockwise"></i>
+        </a>
+    </div>
+
+    <div class="action-buttons">
+        <button class="btn-add" onclick="openAddModal()">
+            <i class="bi bi-shop-window"></i> Thêm thương hiệu
+        </button>
+    </div>
+</div>
+
+<!-- TABLE CARD -->
+<div class="table-card">
+    <table class="table-main">
+        <thead>
+            <tr>
+                <th style="width:120px;">Mã TH</th>
+                <th>Thương hiệu</th>
+                <th>Mô tả</th>
+                <th class="actions-head">Thao tác</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                foreach (var th in Model)
+                {
+                    <tr>
+                        <td class="code-cell">@($"TH{th.MaTH:000}")</td>
+                        <td class="name-cell">
+                            <div class="avatar-circle">
+                                @(string.IsNullOrEmpty(th.TenThuongHieu) ? "?" : th.TenThuongHieu.Trim()[0].ToString().ToUpper())
+                            </div>
+                            <span>@th.TenThuongHieu</span>
+                        </td>
+                        <td class="desc-cell">@th.MoTa</td>
+
+                        <td class="actions">
+                            <button class="btn-view btn-icon tooltip-btn"
+                                    data-tip="Xem chi tiết"
+                                    onclick="viewTH(@th.MaTH)">
+                                <i class="bi bi-file-earmark-text-fill"></i>
+                            </button>
+
+                            <button class="btn-edit btn-icon tooltip-btn"
+                                    data-tip="Sửa thương hiệu"
+                                    onclick="editTH(@th.MaTH)">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+
+                            <button class="btn-delete btn-icon tooltip-btn"
+                                    data-tip="Xóa thương hiệu"
+                                    onclick="deleteTH(@th.MaTH)">
+                                <i class="bi bi-trash3-fill"></i>
+                            </button>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="4" class="empty-row">Chưa có thương hiệu nào.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div class="pagination-box">
+        @if (ViewBag.TotalPage > 1)
+        {
+            <ul class="pagination">
+                <li class="@(ViewBag.Page == 1 ? "disabled" : "")">
+                    <a href="?page=@(ViewBag.Page - 1)&search=@ViewBag.Search">‹</a>
+                </li>
+
+                @for (int i = 1; i <= ViewBag.TotalPage; i++)
+                {
+                    <li class="@(i == ViewBag.Page ? "active" : "")">
+                        <a href="?page=@i&search=@ViewBag.Search">@i</a>
+                    </li>
+                }
+
+                <li class="@(ViewBag.Page == ViewBag.TotalPage ? "disabled" : "")">
+                    <a href="?page=@(ViewBag.Page + 1)&search=@ViewBag.Search">›</a>
+                </li>
+            </ul>
+        }
+    </div>
+</div>
+
+
+<!-- ================= MODAL THÊM ================= -->
+<div id="addModal" class="modal-bg" style="display:none;">
+    <div class="modal-box modal-animate">
+
+        <div class="modal-header-flex">
+            <div class="modal-title-wrap">
+                <i class="bi bi-plus-circle-fill modal-icon"></i>
+                <h3 class="modal-title">Thêm thương hiệu mới</h3>
+            </div>
+            <button class="btn-close-modal" onclick="hideModal('#addModal')">×</button>
+        </div>
+
+        <div class="modal-body">
+            <label class="form-label">Tên thương hiệu</label>
+            <div class="input-group">
+                <i class="bi bi-tag-fill"></i>
+                <input id="add_Ten" class="form-input" placeholder="Nhập tên thương hiệu..." />
+            </div>
+
+            <label class="form-label">Mô tả</label>
+            <textarea id="add_MoTa" class="form-textarea" rows="4" placeholder="Nhập mô tả..."></textarea>
+        </div>
+
+        <div class="footer-area">
+            <button class="btn-save" onclick="saveAdd()">Lưu thương hiệu</button>
+            <button class="btn-close-custom" onclick="hideModal('#addModal')">Đóng</button>
+        </div>
+
+    </div>
+</div>
+
+
+<!-- ================= MODAL SỬA ================= -->
+<div id="editModal" class="modal-bg" style="display:none;">
+    <div class="modal-box modal-animate">
+
+        <div class="modal-header-flex">
+            <div class="modal-title-wrap">
+                <i class="bi bi-pencil-square modal-icon edit"></i>
+                <h3 class="modal-title">Chỉnh sửa thương hiệu</h3>
+            </div>
+            <button class="btn-close-modal" onclick="hideModal('#editModal')">×</button>
+        </div>
+
+        <input type="hidden" id="edit_MaTH" />
+
+        <div class="modal-body">
+            <label class="form-label">Tên thương hiệu</label>
+            <div class="input-group">
+                <i class="bi bi-tag"></i>
+                <input id="edit_Ten" class="form-input" />
+            </div>
+
+            <label class="form-label">Mô tả</label>
+            <textarea id="edit_MoTa" class="form-textarea" rows="4"></textarea>
+        </div>
+
+        <div class="footer-area">
+            <button class="btn-save" onclick="saveEdit()">Lưu thay đổi</button>
+            <button class="btn-close-custom" onclick="hideModal('#editModal')">Đóng</button>
+        </div>
+
+    </div>
+</div>
+
+
+<!-- ================= MODAL XEM ================= -->
+<div id="viewModal" class="modal-bg" style="display:none;">
+    <div class="modal-box modal-animate">
+
+        <div class="modal-header-flex">
+            <div class="modal-title-wrap">
+                <i class="bi bi-eye-fill modal-icon info"></i>
+                <h3 class="modal-title">Chi tiết thương hiệu</h3>
+            </div>
+            <button class="btn-close-modal" onclick="hideModal('#viewModal')">×</button>
+        </div>
+
+        <div class="brand-view-box">
+            <div class="brand-icon-circle">
+                <i class="bi bi-shop"></i>
+            </div>
+
+            <div class="brand-view-info">
+                <p><b>Tên thương hiệu:</b> <span id="v_Ten"></span></p>
+                <p><b>Mô tả:</b> <span id="v_MoTa"></span></p>
+            </div>
+        </div>
+
+        <div class="footer-area">
+            <button class="btn-close-custom" onclick="hideModal('#viewModal')">Đóng</button>
+        </div>
+
+    </div>
+</div>
+
+
+@section scripts {
+    <script>
+        // ===== MODAL UTIL =====
+        function showModal(id) {
+            $(id).addClass("active-bg");
+            $(id).find(".modal-box").addClass("active");
+        }
+        function hideModal(id) {
+            $(id).removeClass("active-bg");
+            $(id).find(".modal-box").removeClass("active");
+        }
+
+        function openAddModal() {
+            $("#add_Ten").val("");
+            $("#add_MoTa").val("");
+            showModal("#addModal");
+            setTimeout(() => $("#add_Ten").focus(), 100);
+        }
+
+        // ===== SAVE ADD =====
+        function saveAdd() {
+            const data = {
+                TenThuongHieu: $("#add_Ten").val().trim(),
+                MoTa: $("#add_MoTa").val().trim()
+            };
+
+            if (!data.TenThuongHieu) {
+                Swal.fire("Thiếu thông tin!", "Vui lòng nhập tên thương hiệu!", "warning");
+                return;
+            }
+
+            $.ajax({
+                url: "/Admin/ThuongHieu/Add",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(data),
+                success: function (res) {
+                    if (res === true) {
+                        Swal.fire("Thành công!", "Đã thêm thương hiệu mới!", "success")
+                            .then(() => location.reload());
+                    } else {
+                        Swal.fire("Lỗi!", "Không thể thêm thương hiệu!", "error");
+                    }
+                }
+            });
+        }
+
+        // ===== EDIT GET =====
+        function editTH(id) {
+            $.get("/Admin/ThuongHieu/Get/" + id, function (data) {
+                if (!data) return;
+
+                $("#edit_MaTH").val(data.MaTH);
+                $("#edit_Ten").val(data.TenThuongHieu);
+                $("#edit_MoTa").val(data.MoTa);
+
+                showModal("#editModal");
+            });
+        }
+
+        // ===== SAVE EDIT =====
+        function saveEdit() {
+            const data = {
+                MaTH: $("#edit_MaTH").val(),
+                TenThuongHieu: $("#edit_Ten").val().trim(),
+                MoTa: $("#edit_MoTa").val().trim()
+            };
+
+            if (!data.TenThuongHieu) {
+                Swal.fire("Thiếu thông tin!", "Vui lòng nhập tên thương hiệu!", "warning");
+                return;
+            }
+
+            $.ajax({
+                url: "/Admin/ThuongHieu/Edit",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(data),
+                success: function (res) {
+                    if (res === true) {
+                        Swal.fire("Đã lưu!", "Cập nhật thành công!", "success")
+                            .then(() => location.reload());
+                    } else {
+                        Swal.fire("Lỗi!", "Không thể cập nhật thương hiệu!", "error");
+                    }
+                }
+            });
+        }
+
+        // ===== DELETE =====
+        function deleteTH(id) {
+            Swal.fire({
+                title: "Bạn có chắc?",
+                text: "Xóa thương hiệu này sẽ không thể hoàn tác!",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#E76F51",
+                cancelButtonColor: "#6c757d",
+                confirmButtonText: "Xóa",
+                cancelButtonText: "Hủy"
+            }).then((r) => {
+                if (r.isConfirmed) {
+                    $.post("/Admin/ThuongHieu/Delete", { id }, function (res) {
+                        if (res === true) {
+                            Swal.fire("Đã xóa!", "", "success")
+                                .then(() => location.reload());
+                        } else {
+                            Swal.fire("Lỗi!", "Không thể xóa!", "error");
+                        }
+                    });
+                }
+            });
+        }
+
+        // ===== VIEW =====
+        function viewTH(id) {
+            $.get("/Admin/ThuongHieu/Details/" + id, function (d) {
+                if (!d) return;
+                $("#v_Ten").text(d.TenThuongHieu);
+                $("#v_MoTa").text(d.MoTa);
+                showModal("#viewModal");
+            });
+        }
+
+        // ===== SEARCH =====
+        $("#btnSearch").click(function () {
+            let kw = $("#searchBox").val().trim();
+            window.location.href = "/Admin/ThuongHieu?search=" + encodeURIComponent(kw);
+        });
+        $("#searchBox").keypress(function (e) {
+            if (e.which === 13) $("#btnSearch").click();
+        });
+    </script>
+}

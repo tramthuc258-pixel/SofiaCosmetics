@@ -1,0 +1,90 @@
+﻿@model SofiaCosmetics.Models.KHACHHANG
+@{
+    ViewBag.Title = "Đăng ký";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link rel="stylesheet" href="~/Content/register.css" />
+
+<div class="register-wrapper">
+    <div class="register-card">
+
+        <h2>ĐĂNG KÝ TÀI KHOẢN</h2>
+
+        @if (TempData["Error"] != null)
+        {
+            <div class="register-error">@TempData["Error"]</div>
+        }
+
+        <!-- Đăng ký MXH -->
+        <div class="social-block">
+            <p class="social-title">Đăng ký bằng tài khoản mạng xã hội</p>
+
+            <div class="social-buttons">
+                <a href="/User/LoginGoogle" class="social-btn google-btn">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/4/4a/Logo_2013_Google.png" />
+                </a>
+
+                <a href="/User/LoginFacebook" class="social-btn facebook-btn">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/0/05/Facebook_Logo_%282019%29.png" />
+                </a>
+            </div>
+
+            <div class="divider">
+                <span>Hoặc nhập thông tin bên dưới</span>
+            </div>
+        </div>
+
+        <!-- Form đăng ký -->
+        <form method="post" action="/User/Register" class="register-form">
+            @Html.AntiForgeryToken()
+
+            <!-- Hàng 1: Họ tên + Ngày sinh -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Họ và tên</label>
+                    <input type="text" name="HoTen" required />
+                </div>
+
+                <div class="form-group">
+                    <label>Ngày sinh</label>
+                    @Html.TextBoxFor(m => m.NgaySinh, "{0:yyyy-MM-dd}", new { type = "date", required = "required" })
+                </div>
+            </div>
+
+            <!-- Hàng 2: SĐT + Email -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Số điện thoại</label>
+                    <input type="text" name="SDT" required />
+                </div>
+
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" name="Email" required />
+                </div>
+            </div>
+
+            <!-- Hàng 3: Mật khẩu + Nhập lại -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Mật khẩu</label>
+                    <input type="password" name="MatKhau" required />
+                </div>
+
+                <div class="form-group">
+                    <label>Nhập lại mật khẩu</label>
+                    <input type="password" name="XacNhanMatKhau" required />
+                </div>
+            </div>
+
+            <button class="btn-register">Hoàn tất đăng ký</button>
+
+            <p class="footer-text">
+                Đã có tài khoản?
+                <a href="/User/Login" class="login-link">Quay lại đăng nhập</a>
+            </p>
+        </form>
+
+    </div>
+</div>

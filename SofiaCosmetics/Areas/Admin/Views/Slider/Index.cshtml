@@ -1,0 +1,502 @@
+﻿@model IEnumerable<SofiaCosmetics.Models.AdminModels.AdminSlider>
+@section styles{
+    <link href="~/Content/admin-slider.css" rel="stylesheet" />
+}
+@{
+    ViewBag.Title = "Quản lý Slider";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<div class="top-action-bar">
+    <h2 class="page-title">Quản lý Slider</h2>
+
+    <!-- ✅ FORM GET: search chắc chắn chạy + giữ status/pageSize -->
+    <form class="search-area" method="get" action="/Admin/Slider/Index">
+        <input type="text"
+               id="searchBox"
+               name="search"
+               placeholder="Tìm kiếm slider..."
+               value="@ViewBag.Search" />
+
+        <!-- giữ filter status nếu sau này bạn có dropdown -->
+        <input type="hidden" name="status" value="@ViewBag.Status" />
+        <input type="hidden" name="pageSize" value="@ViewBag.PageSize" />
+
+        <button class="btn-search" id="btnSearch" type="submit">
+            <i class="bi bi-search"></i>
+        </button>
+
+        <a href="/Admin/Slider" class="btn-reset">
+            <i class="bi bi-arrow-clockwise"></i>
+        </a>
+    </form>
+
+    <div class="action-buttons">
+        <button class="btn-add" onclick="openAddModal()">
+            <i class="bi bi-images"></i> Thêm slider
+        </button>
+    </div>
+</div>
+
+<!-- TABLE CARD -->
+<div class="table-card">
+    <table class="table-main">
+        <thead>
+            <tr>
+                <th style="width:90px;">Mã</th>
+                <th style="width:180px;">Hình ảnh</th>
+                <th>Tiêu đề</th>
+                <th>Mô tả</th>
+                <th style="width:90px;" class="text-center">Thứ tự</th>
+                <th style="width:120px;">Trạng thái</th>
+                <th class="actions-head">Thao tác</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                foreach (var s in Model)
+                {
+                    <tr>
+                        <td class="code-cell">@($"SL{s.MaSlider:000}")</td>
+                        <td>
+                            <img class="thumb" src="@Url.Content(s.HinhAnh)" alt="slider" />
+                        </td>
+                        <td><b>@s.TieuDe</b></td>
+                        <td class="muted">@s.MoTa</td>
+                        <td class="text-center"><b>@s.ThuTu</b></td>
+                        <td>
+                            @if (s.TrangThai)
+                            {
+                                <span class="badge success">Hiển thị</span>
+                            }
+                            else
+                            {
+                                <span class="badge danger">Ẩn</span>
+                            }
+                        </td>
+                        <td class="actions">
+                            <div class="actions-wrap">
+                                <button class="btn-view btn-icon tooltip-btn"
+                                        data-tip="Xem chi tiết"
+                                        onclick="viewSlider(@s.MaSlider)">
+                                    <i class="bi bi-file-earmark-text-fill"></i>
+                                </button>
+
+                                <button class="btn-edit btn-icon tooltip-btn"
+                                        data-tip="Sửa slider"
+                                        onclick="editSlider(@s.MaSlider)">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+
+                                <button class="btn-delete btn-icon tooltip-btn"
+                                        data-tip="Xóa slider"
+                                        onclick="deleteSlider(@s.MaSlider)">
+                                    <i class="bi bi-trash3-fill"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="7" class="empty-row">Chưa có slider nào.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- ✅ Pagination giữ search + status + pageSize -->
+    <div class="pagination-box">
+        @if (ViewBag.TotalPage > 1)
+        {
+            <ul class="pagination">
+                <li class="@(ViewBag.Page == 1 ? "disabled" : "")">
+                    <a href="?page=@(ViewBag.Page - 1)&search=@ViewBag.Search&status=@ViewBag.Status&pageSize=@ViewBag.PageSize">‹</a>
+                </li>
+
+                @for (int i = 1; i <= ViewBag.TotalPage; i++)
+                {
+                    <li class="@(i == ViewBag.Page ? "active" : "")">
+                        <a href="?page=@i&search=@ViewBag.Search&status=@ViewBag.Status&pageSize=@ViewBag.PageSize">@i</a>
+                    </li>
+                }
+
+                <li class="@(ViewBag.Page == ViewBag.TotalPage ? "disabled" : "")">
+                    <a href="?page=@(ViewBag.Page + 1)&search=@ViewBag.Search&status=@ViewBag.Status&pageSize=@ViewBag.PageSize">›</a>
+                </li>
+            </ul>
+        }
+    </div>
+</div>
+
+
+<!-- ================= MODAL ADD ================= -->
+<div id="addModal" class="modal-bg" style="display:none;">
+    <div class="modal-box modal-animate modal-lg">
+        <div class="modal-header-flex">
+            <h3 class="modal-title">Thêm slider mới</h3>
+            <button class="btn-close-modal" onclick="hideModal('#addModal')">×</button>
+        </div>
+
+        <div class="modal-body">
+
+            <label class="form-label">Tiêu đề</label>
+            <div class="input-group">
+                <i class="bi bi-type"></i>
+                <input id="add_TieuDe" class="form-input" placeholder="Tiêu đề slider...">
+            </div>
+
+            <label class="form-label">Mô tả</label>
+            <div class="input-group">
+                <i class="bi bi-card-text"></i>
+                <input id="add_MoTa" class="form-input" placeholder="Mô tả ngắn...">
+            </div>
+
+            <!-- UPLOAD CUSTOM -->
+            <label class="form-label">Ảnh slider</label>
+            <input id="add_File" type="file" accept="image/*" hidden />
+            <div class="upload-box" onclick="document.getElementById('add_File').click()">
+                <div class="upload-icon">
+                    <i class="bi bi-cloud-arrow-up-fill"></i>
+                </div>
+                <div class="upload-text">
+                    <div class="upload-title">Bấm để chọn ảnh</div>
+                    <div class="upload-sub">JPG/PNG/WEBP</div>
+                    <div id="add_FileName" class="upload-filename">Chưa chọn tệp</div>
+                </div>
+            </div>
+
+            <div class="preview-wrap">
+                <img id="preview_add" class="preview" style="display:none;" />
+            </div>
+
+            <div class="grid-2">
+                <div>
+                    <label class="form-label">Thứ tự hiển thị</label>
+                    <div class="input-group">
+                        <i class="bi bi-123"></i>
+                        <input id="add_ThuTu" type="number" class="form-input" value="0" min="0">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="form-label">Trạng thái</label>
+                    <select id="add_TrangThai" class="form-select">
+                        <option value="true">Hiển thị</option>
+                        <option value="false">Ẩn</option>
+                    </select>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn-close-custom" onclick="hideModal('#addModal')">Đóng</button>
+            <button class="btn-save" onclick="saveAdd()">Lưu</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- ================= MODAL EDIT ================= -->
+<div id="editModal" class="modal-bg" style="display:none;">
+    <div class="modal-box modal-animate modal-lg">
+        <div class="modal-header-flex">
+            <h3 class="modal-title">Sửa slider</h3>
+            <button class="btn-close-modal" onclick="hideModal('#editModal')">×</button>
+        </div>
+
+        <input type="hidden" id="edit_MaSlider" />
+        <input type="hidden" id="edit_OldImage" />
+
+        <div class="modal-body">
+
+            <label class="form-label">Tiêu đề</label>
+            <div class="input-group">
+                <i class="bi bi-type"></i>
+                <input id="edit_TieuDe" class="form-input">
+            </div>
+
+            <label class="form-label">Mô tả</label>
+            <div class="input-group">
+                <i class="bi bi-card-text"></i>
+                <input id="edit_MoTa" class="form-input">
+            </div>
+
+            <!-- UPLOAD CUSTOM EDIT -->
+            <label class="form-label">Đổi ảnh slider (nếu muốn)</label>
+            <input id="edit_File" type="file" accept="image/*" hidden />
+            <div class="upload-box upload-box-sm" onclick="document.getElementById('edit_File').click()">
+                <div class="upload-icon">
+                    <i class="bi bi-cloud-arrow-up-fill"></i>
+                </div>
+                <div class="upload-text">
+                    <div class="upload-title">Chọn ảnh mới</div>
+                    <div id="edit_FileName" class="upload-filename">Giữ ảnh hiện tại</div>
+                </div>
+            </div>
+
+            <div class="preview-wrap">
+                <img id="preview_edit" class="preview" />
+            </div>
+
+            <div class="grid-2">
+                <div>
+                    <label class="form-label">Thứ tự hiển thị</label>
+                    <div class="input-group">
+                        <i class="bi bi-123"></i>
+                        <input id="edit_ThuTu" type="number" class="form-input" min="0">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="form-label">Trạng thái</label>
+                    <select id="edit_TrangThai" class="form-select">
+                        <option value="true">Hiển thị</option>
+                        <option value="false">Ẩn</option>
+                    </select>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn-close-custom" onclick="hideModal('#editModal')">Đóng</button>
+            <button class="btn-save" onclick="saveEdit()">Lưu</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- ================= MODAL VIEW ================= -->
+<div id="viewModal" class="modal-bg" style="display:none;">
+    <div class="modal-box modal-animate modal-lg">
+        <div class="modal-header-flex">
+            <h3 class="modal-title">Thông tin slider</h3>
+            <button class="btn-close-modal" onclick="hideModal('#viewModal')">×</button>
+        </div>
+
+        <div class="modal-body view-body">
+            <div class="view-banner">
+                <img id="v_HinhAnh" class="view-img" />
+                <div class="view-overlay">
+                    <span id="v_TrangThaiBadge" class="status-pill">Hiển thị</span>
+                    <span class="order-pill">#<span id="v_ThuTu"></span></span>
+                </div>
+            </div>
+
+            <div class="view-grid">
+                <div class="info-item">
+                    <i class="bi bi-type"></i>
+                    <div>
+                        <div class="info-label">Tiêu đề</div>
+                        <div id="v_TieuDe" class="info-value"></div>
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <i class="bi bi-card-text"></i>
+                    <div>
+                        <div class="info-label">Mô tả</div>
+                        <div id="v_MoTa" class="info-value muted"></div>
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <i class="bi bi-calendar2-event"></i>
+                    <div>
+                        <div class="info-label">Ngày tạo</div>
+                        <div id="v_NgayTao" class="info-value"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn-close-custom" onclick="hideModal('#viewModal')">Đóng</button>
+        </div>
+    </div>
+</div>
+
+
+@section scripts{
+    <script>
+        // ===== MODAL UTIL =====
+        function showModal(selector) {
+            $(selector).addClass("active-bg");
+            $(selector).find(".modal-lg").addClass("active");
+        }
+        function hideModal(selector) {
+            $(selector).removeClass("active-bg");
+            $(selector).find(".modal-lg").removeClass("active");
+        }
+
+        function openAddModal() {
+            $("#add_TieuDe,#add_MoTa").val("");
+            $("#add_ThuTu").val(0);
+            $("#add_TrangThai").val("true");
+            $("#add_File").val("");
+            $("#add_FileName").text("Chưa chọn tệp");
+            $("#preview_add").hide();
+            showModal("#addModal");
+            setTimeout(() => $("#add_TieuDe").focus(), 80);
+        }
+
+        // ===== PREVIEW ADD FILE =====
+        $("#add_File").on("change", function () {
+            const file = this.files && this.files[0];
+            if (!file) {
+                $("#add_FileName").text("Chưa chọn tệp");
+                $("#preview_add").hide();
+                return;
+            }
+            $("#add_FileName").text(file.name);
+            const url = URL.createObjectURL(file);
+            $("#preview_add").attr("src", url).show();
+        });
+
+        // ===== PREVIEW EDIT FILE =====
+        $("#edit_File").on("change", function () {
+            const file = this.files && this.files[0];
+            if (!file) {
+                $("#edit_FileName").text("Giữ ảnh hiện tại");
+                return;
+            }
+            $("#edit_FileName").text(file.name);
+            const url = URL.createObjectURL(file);
+            $("#preview_edit").attr("src", url);
+        });
+
+        // ===== SAVE ADD (multipart) =====
+        function saveAdd() {
+            const file = $("#add_File")[0].files[0];
+            if (!file) {
+                Swal.fire("Thiếu ảnh!", "Vui lòng chọn ảnh slider.", "warning");
+                return;
+            }
+
+            const fd = new FormData();
+            fd.append("TieuDe", $("#add_TieuDe").val().trim());
+            fd.append("MoTa", $("#add_MoTa").val().trim());
+            fd.append("ThuTu", $("#add_ThuTu").val() || 0);
+            fd.append("TrangThai", $("#add_TrangThai").val() === "true");
+            fd.append("ImageFile", file);
+
+            $.ajax({
+                url: "/Admin/Slider/Add",
+                method: "POST",
+                data: fd,
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.success) {
+                        Swal.fire("Thành công!", "Đã thêm slider mới.", "success")
+                            .then(() => location.reload());
+                    } else {
+                        Swal.fire("Lỗi!", res.message || "Không thể thêm slider!", "error");
+                    }
+                }
+            });
+        }
+
+        // ===== GET EDIT =====
+        function editSlider(id) {
+            $.get("/Admin/Slider/Get/" + id, function (data) {
+                if (!data) return;
+
+                $("#edit_MaSlider").val(data.MaSlider);
+                $("#edit_TieuDe").val(data.TieuDe);
+                $("#edit_MoTa").val(data.MoTa);
+                $("#edit_ThuTu").val(data.ThuTu);
+                $("#edit_TrangThai").val(data.TrangThai ? "true" : "false");
+
+                $("#edit_OldImage").val(data.HinhAnh);
+                $("#edit_File").val("");
+                $("#edit_FileName").text("Giữ ảnh hiện tại");
+                $("#preview_edit").attr("src", data.HinhAnh);
+
+                showModal("#editModal");
+                setTimeout(() => $("#edit_TieuDe").focus(), 80);
+            });
+        }
+
+        // ===== SAVE EDIT (multipart) =====
+        function saveEdit() {
+            const fd = new FormData();
+            fd.append("MaSlider", $("#edit_MaSlider").val());
+            fd.append("TieuDe", $("#edit_TieuDe").val().trim());
+            fd.append("MoTa", $("#edit_MoTa").val().trim());
+            fd.append("ThuTu", $("#edit_ThuTu").val() || 0);
+            fd.append("TrangThai", $("#edit_TrangThai").val() === "true");
+            fd.append("OldImage", $("#edit_OldImage").val());
+
+            const newFile = $("#edit_File")[0].files[0];
+            if (newFile) fd.append("ImageFile", newFile);
+
+            $.ajax({
+                url: "/Admin/Slider/Edit",
+                method: "POST",
+                data: fd,
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.success) {
+                        Swal.fire("Thành công!", "Đã cập nhật slider.", "success")
+                            .then(() => location.reload());
+                    } else {
+                        Swal.fire("Lỗi!", res.message || "Không thể lưu thay đổi!", "error");
+                    }
+                }
+            });
+        }
+
+        // ===== DELETE (SOFT) =====
+        function deleteSlider(id) {
+            Swal.fire({
+                title: "Xóa slider này?",
+                text: "Slider sẽ chuyển sang trạng thái Xóa.",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#E76F51",
+                cancelButtonColor: "#6c757d",
+                confirmButtonText: "Đồng ý",
+                cancelButtonText: "Hủy"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post("/Admin/Slider/Delete", { id }, function (res) {
+                        if (res.success) {
+                            Swal.fire("Đã cập nhật!", "Slider đã Xóa.", "success")
+                                .then(() => location.reload());
+                        } else {
+                            Swal.fire("Lỗi!", "Không thể Xóa slider!", "error");
+                        }
+                    });
+                }
+            });
+        }
+
+        // ===== VIEW =====
+        function viewSlider(id) {
+            $.get("/Admin/Slider/Details/" + id, function (data) {
+                if (!data) return;
+
+                $("#v_HinhAnh").attr("src", data.HinhAnh);
+                $("#v_TieuDe").text(data.TieuDe || "(Không có)");
+                $("#v_MoTa").text(data.MoTa || "(Không có)");
+                $("#v_ThuTu").text(data.ThuTu);
+                $("#v_NgayTao").text(data.NgayTao || "");
+
+                if (data.TrangThaiText === "Hiển thị") {
+                    $("#v_TrangThaiBadge").text("Hiển thị").removeClass("off");
+                } else {
+                    $("#v_TrangThaiBadge").text("Xóa").addClass("off");
+                }
+
+                showModal("#viewModal");
+            });
+        }
+    </script>
+}

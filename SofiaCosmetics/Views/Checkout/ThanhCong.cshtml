@@ -1,0 +1,92 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    int orderId = ViewBag.OrderId != null ? (int)ViewBag.OrderId : 0;
+}
+
+<style>
+    .success-box {
+        max-width: 600px;
+        margin: 50px auto;
+        padding: 30px;
+        background: #ffffff;
+        border-radius: 14px;
+        text-align: center;
+        border: 1px solid #f0dcdc;
+        font-family: 'Poppins', sans-serif;
+    }
+
+        .success-box img {
+            width: 120px;
+            margin-bottom: 15px;
+        }
+
+    .btn-main {
+        background: #ee4d2d;
+        color: #fff;
+        padding: 10px 25px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: 0.2s;
+        display: inline-block;
+        margin-top: 10px;
+    }
+
+        .btn-main:hover {
+            background: #d94426;
+        }
+
+    .btn-outline {
+        border: 1px solid #ee4d2d;
+        padding: 10px 25px;
+        border-radius: 8px;
+        color: #ee4d2d;
+        font-weight: 600;
+        text-decoration: none;
+        transition: 0.2s;
+        display: inline-block;
+        margin-top: 10px;
+        background: white;
+    }
+
+        .btn-outline:hover {
+            background: #fff5f3;
+        }
+</style>
+
+<div class="success-box">
+
+    <img src="https://cdn-icons-png.flaticon.com/512/845/845646.png" />
+
+    <h2 class="text-success fw-bold">Đặt hàng thành công!</h2>
+    <p>Cảm ơn bạn đã mua sắm tại <b>Sofia Cosmetics</b>.</p>
+
+    @if (orderId > 0)
+    {
+        <p class="mt-2">
+            Mã đơn hàng của bạn là:
+            <b class="text-danger">#@orderId</b>
+        </p>
+
+        <a href="/Checkout/OrderDetails/@orderId" class="btn-main">
+            🔍 Xem chi tiết đơn hàng
+        </a>
+
+        <a href="/Checkout/CancelOrder/@orderId"
+           class="btn-outline"
+           onclick="return confirm('Bạn chắc chắn muốn hủy đơn hàng này?');">
+            ❌ Hủy đơn hàng
+        </a>
+    }
+    else
+    {
+        <p class="text-muted">Không tìm thấy mã đơn hàng.</p>
+    }
+
+    <br />
+
+    <a href="/Home" class="btn-main" style="background:#555;">
+        ⬅ Quay lại trang chủ
+    </a>
+
+</div>

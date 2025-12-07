@@ -1,0 +1,354 @@
+﻿@model SofiaCosmetics.Models.TINTUC
+@using System.Web
+@using System.Text.RegularExpressions
+@using System.Linq
+@using System.Collections.Generic
+<link href="~/Content/gioithieu.css" rel="stylesheet" />
+@{
+    ViewBag.Title = Model.TenTrang;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    // ================== BASIC ==================
+    string rawHtml = HttpUtility.HtmlDecode(Model.NoiDung ?? "");
+
+    // ================== HELPERS ==================
+    Func<string, string> StripHtml = s =>
+        string.IsNullOrWhiteSpace(s) ? "" : Regex.Replace(s, "<[^>]*>", "").Trim();
+
+    Func<string, string> Norm = s =>
+        (s ?? "").Replace("\r\n", "\n").Replace("\r", "\n").Trim();
+
+    // tách block theo dấu --- (chịu được CKEditor bọc thẻ)
+    Func<string, List<string>> SplitBlocks = s =>
+    {
+        var t = Norm(StripHtml(s));
+        if (string.IsNullOrWhiteSpace(t)) return new List<string>();
+
+        t = Regex.Replace(t, @"^\s*---\s*$", "\n---\n", RegexOptions.Multiline);
+
+        return Regex.Split(t, @"(?:^|\n)\s*---\s*(?:\n|$)")
+                    .Select(b => b.Trim())
+                    .Where(b => !string.IsNullOrWhiteSpace(b))
+                    .ToList();
+    };
+
+    bool hasSeparator = Regex.IsMatch(Norm(StripHtml(rawHtml)), @"(?:^|\n)\s*---\s*(?:\n|$)");
+
+    // tìm dòng bắt đầu bằng prefix:
+    Func<List<string>, string, string> FindLine = (lines, prefix) =>
+    {
+        var l = lines.FirstOrDefault(x => x.Trim().ToLower().StartsWith(prefix.ToLower()));
+        if (l == null) return "";
+        return l.Substring(prefix.Length).Trim();
+    };
+
+    // parse list dạng:
+    // 1. Title | Desc
+    // - Title | Desc
+    Func<List<string>, List<(string title, string desc)>> ParsePairList = lines =>
+    {
+        var res = new List<(string, string)>();
+        foreach (var ln in lines)
+        {
+            var s = ln.Trim();
+            s = Regex.Replace(s, @"^\d+\.\s*", "");
+            s = Regex.Replace(s, @"^-\s*", "");
+            if (string.IsNullOrWhiteSpace(s)) continue;
+
+            var parts = s.Split(new[] { "|" }, 2, System.StringSplitOptions.None)
+                         .Select(p => p.Trim()).ToArray();
+
+            var title = parts.ElementAtOrDefault(0) ?? "";
+            var desc = parts.ElementAtOrDefault(1) ?? "";
+            if (!string.IsNullOrWhiteSpace(title))
+                res.Add((title, desc));
+        }
+        return res;
+    };
+
+    // parse timeline:
+    // 2023 | text
+    Func<List<string>, List<(string year, string text)>> ParseTimeline = lines =>
+    {
+        var res = new List<(string, string)>();
+        foreach (var ln in lines)
+        {
+            var s = ln.Trim();
+            if (string.IsNullOrWhiteSpace(s)) continue;
+
+            var parts = s.Split(new[] { "|" }, 2, System.StringSplitOptions.None)
+                         .Select(p => p.Trim()).ToArray();
+
+            var year = parts.ElementAtOrDefault(0) ?? "";
+            var text = parts.ElementAtOrDefault(1) ?? "";
+            if (!string.IsNullOrWhiteSpace(year))
+                res.Add((year, text));
+        }
+        return res;
+    };
+
+    // ================== DEFAULT RAW FALLBACK ==================
+    Func<IHtmlString> RenderRaw = () =>
+    {
+        string content = rawHtml;
+        bool looksLikeHtml = content.Contains("<");
+
+        if (!looksLikeHtml)
+        {
+            content = Norm(content).Replace("\n", "<br/>");
+        }
+        return new HtmlString($"<div class='sf-pagecontent'>{content}</div>");
+    };
+
+    bool shouldParse = hasSeparator;
+
+    // ================== PARSE ABOUT ==================
+    var aboutBlocks = shouldParse ? SplitBlocks(rawHtml) : new List<string>();
+
+    // Block 0: HERO lines
+    var heroLinesAll = aboutBlocks.ElementAtOrDefault(0) != null
+        ? Norm(aboutBlocks[0]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+
+    // Có thể override link trong CKEditor bằng dòng:
+    // "Xem sản phẩm: /duong-dan"
+    // "Liên hệ tư vấn: /duong-dan"
+    string spLink = FindLine(heroLinesAll, "Xem sản phẩm:");
+    string lhLink = FindLine(heroLinesAll, "Liên hệ tư vấn:");
+
+    // NẾU KHÔNG CÓ trong nội dung, dùng route chuẩn:
+    // Home/SanPham  và  TinTuc/Slug("lien-he")
+    if (string.IsNullOrWhiteSpace(spLink))
+    {
+        spLink = Url.Action("SanPham", "Home"); // -> đường dẫn thật tới trang sản phẩm
+    }
+    if (string.IsNullOrWhiteSpace(lhLink))
+    {
+        lhLink = Url.Action("Slug", "TinTuc", new { slug = "lien-he" }); // -> trang Liên hệ
+    }
+
+    var heroLines = heroLinesAll
+        .Where(x => !x.ToLower().StartsWith("xem sản phẩm:")
+                 && !x.ToLower().StartsWith("liên hệ tư vấn:"))
+        .ToList();
+
+    string aboutHeroTitle = heroLines.ElementAtOrDefault(0) ?? "SofiaCosmetics";
+    string aboutHeroSub = heroLines.ElementAtOrDefault(1) ?? "CHÍNH HÃNG CHUẨN NGUỒN GỐC – DỊU LÀNH CHO LÀN DA VIỆT";
+
+    // Block 1: Image URL
+    string aboutImage = aboutBlocks.ElementAtOrDefault(1)
+        ?? "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=1400&auto=format&fit=crop";
+
+    // Block 2: WHO we are
+    var whoLines = aboutBlocks.ElementAtOrDefault(2) != null
+        ? Norm(aboutBlocks[2]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+
+    string whoTitle = whoLines.ElementAtOrDefault(0) ?? "SOFIA LÀ AI?";
+    string whoP1 = whoLines.ElementAtOrDefault(1) ?? "SofiaCosmetics là shop mỹ phẩm chính hãng, tập trung vào các sản phẩm an toàn – lành tính – phù hợp làn da Việt.";
+    string whoP2 = whoLines.ElementAtOrDefault(2) ?? "Mỗi sản phẩm tại Sofia đều được chọn lọc kỹ nguồn gốc rõ ràng, thành phần minh bạch, trải nghiệm thật để bạn yên tâm sử dụng.";
+
+    // Block 3: COMMITMENTS
+    var commitLines = aboutBlocks.ElementAtOrDefault(3) != null
+        ? Norm(aboutBlocks[3]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+
+    string commitTitle = commitLines.FirstOrDefault() ?? "CAM KẾT CỦA SOFIACOSMETICS";
+    var commitItems = ParsePairList(commitLines.Skip(1).ToList());
+    if (commitItems.Count == 0)
+    {
+        commitItems = new List<(string, string)>
+{
+            ("Chính hãng 100%","Minh bạch nguồn gốc, đầy đủ tem nhãn."),
+            ("Thành phần rõ ràng","Ưu tiên dịu nhẹ, lành tính cho da."),
+            ("Tư vấn đúng nhu cầu","Đồng hành cùng bạn chọn đúng sản phẩm."),
+            ("Đóng gói kỹ – giao nhanh","Bao bọc cẩn thận, giao hàng nhanh."),
+            ("Đổi trả rõ ràng","Hỗ trợ theo đúng chính sách.")
+        };
+    }
+    var commitIcons = new[]
+    {
+        "bi-patch-check-fill","bi-flower1","bi-chat-heart-fill","bi-box-seam-fill","bi-arrow-repeat"
+    };
+
+    // Block 4: WHY us
+    var whyLines = aboutBlocks.ElementAtOrDefault(4) != null
+        ? Norm(aboutBlocks[4]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+
+    string whyTitle = whyLines.FirstOrDefault() ?? "VÌ SAO HỢP DA VIỆT?";
+    var whyItems = ParsePairList(whyLines.Skip(1).ToList());
+    if (whyItems.Count == 0)
+    {
+        whyItems = new List<(string, string)>
+{
+            ("Chọn theo khí hậu Việt Nam","Sản phẩm phù hợp thời tiết nóng ẩm, dễ dùng."),
+            ("Test thực tế trước khi bán","Trải nghiệm thật trước khi đến tay bạn."),
+            ("Danh mục đa dạng","Skincare – makeup – bodycare cho mọi loại da.")
+        };
+    }
+    var whyIcons = new[] { "bi-sun", "bi-patch-check", "bi-grid" };
+
+    // Block 5: TIMELINE
+    var timeLines = aboutBlocks.ElementAtOrDefault(5) != null
+        ? Norm(aboutBlocks[5]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+
+    string timeTitle = timeLines.FirstOrDefault() ?? "HÀNH TRÌNH PHÁT TRIỂN";
+    var timeItems = ParseTimeline(timeLines.Skip(1).ToList());
+    if (timeItems.Count == 0)
+    {
+        timeItems = new List<(string, string)>
+{
+            ("2021","Bắt đầu hành trình SofiaCosmetics."),
+            ("2022","Mở rộng danh mục và khách hàng."),
+            ("2023","Được nhiều bạn tin tưởng hơn."),
+            ("2024 – nay","Hoàn thiện dịch vụ & trải nghiệm mua sắm.")
+        };
+    }
+
+    // Block 6: WISH
+    var wishLines = aboutBlocks.ElementAtOrDefault(6) != null
+        ? Norm(aboutBlocks[6]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+
+    string wishTitle = wishLines.FirstOrDefault() ?? "Sofia mong muốn bạn";
+    var wishItems = wishLines.Skip(1).Where(x => x != "").ToList();
+    if (wishItems.Count == 0)
+    {
+        wishItems = new List<string>
+{
+            "Tìm được sản phẩm thật sự hợp da.",
+            "Cảm thấy thoải mái và tin tưởng khi mua sắm.",
+            "Mỗi lần ghé Sofia là một trải nghiệm dễ chịu."
+        };
+    }
+
+    string mapEmbed =
+        "https://www.google.com/maps?q=06+Tr%E1%BA%A7n+V%C4%83n+%C6%A0n,+Ph%C3%BA+Ho%C3%A0,+Th%E1%BB%A7+D%E1%BA%A7u+M%E1%BB%99t,+B%C3%ACnh+D%C6%B0%C6%A1ng&output=embed";
+}
+
+<div class="sf-static container">
+    <h2 class="sf-static__title">@Model.TenTrang</h2>
+    <div class="sf-static__line"></div>
+
+    @if (!shouldParse)
+    {
+        @RenderRaw()
+    }
+    else
+    {
+        <section class="sf-hero">
+            <div class="sf-hero__inner">
+                <h1>@aboutHeroTitle</h1>
+                <p>@aboutHeroSub</p>
+
+                <div class="sf-hero__btns">
+                    <a class="sf-btn sf-btn--primary" href="/danh-muc/san-pham">Xem sản phẩm</a>
+                    <a class="sf-btn sf-btn--ghost" href="/danh-muc/lien-he">Liên hệ tư vấn</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="sf-section">
+            <div class="sf-grid-2">
+                <div class="sf-imgbox">
+                    <img src="@aboutImage" alt="SofiaCosmetics" />
+                </div>
+
+                <div class="sf-text">
+                    <h2>@whoTitle</h2>
+                    <p>@whoP1</p>
+                    <p>@whoP2</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="sf-section">
+            <h2 class="sf-center">@commitTitle</h2>
+
+            <div class="sf-commit">
+                @for (int i = 0; i < commitItems.Count; i++)
+                {
+                    var it = commitItems[i];
+                    var icon = commitIcons.ElementAtOrDefault(i) ?? "bi-star-fill";
+                    <div class="sf-card">
+                        <div class="sf-icon"><i class="bi @icon"></i></div>
+                        <h3>@it.title</h3>
+                        <p>@it.desc</p>
+                    </div>
+                }
+            </div>
+        </section>
+
+        <section class="sf-section sf-section--why">
+            <h2 class="sf-center sf-center--big">@whyTitle</h2>
+
+            <div class="sf-why">
+                @for (int i = 0; i < whyItems.Count; i++)
+                {
+                    var it = whyItems[i];
+                    var icon = whyIcons.ElementAtOrDefault(i) ?? "bi-heart-fill";
+                    <div class="sf-card sf-card--soft sf-why-card">
+                        <div class="sf-why-icon"><i class="bi @icon"></i></div>
+                        <h3>@it.title</h3>
+                        <p>@it.desc</p>
+                    </div>
+                }
+            </div>
+        </section>
+
+        <section class="sf-section">
+            <h2 class="sf-center">@timeTitle</h2>
+
+            <div class="sf-timeline">
+                @foreach (var t in timeItems)
+                {
+                    <div class="sf-time">
+                        <span>@t.year</span>
+                        <p>@t.text</p>
+                    </div>
+                }
+            </div>
+        </section>
+
+        <section class="sf-section">
+            <div class="sf-wish sf-wish--v2">
+                <div class="sf-wish__left">
+                    <div class="sf-wish__icon"><i class="bi bi-heart-fill"></i></div>
+                    <div class="sf-wish__title">@wishTitle</div>
+                    <div class="sf-wish__sub">
+                        Tụi mình ở đây để hành trình skincare của bạn nhẹ nhàng hơn.
+                    </div>
+                </div>
+
+                <div class="sf-wish__divider"></div>
+
+                <div class="sf-wish__right">
+                    <ul class="sf-wish__list">
+                        @foreach (var w in wishItems)
+                        {
+                            var txt = Regex.Replace(w, @"^-\s*", "");
+                            <li>@txt</li>
+                        }
+                    </ul>
+                </div>
+
+                <div class="sf-wish__right sf-wish__right--map">
+                    <div class="sf-wish__mapbox">
+                        <iframe src="@mapEmbed" loading="lazy"></iframe>
+                    </div>
+
+                    <div class="sf-wish__addr">
+                        <h4>Địa chỉ cửa hàng</h4>
+                        <p>06 Trần Văn Ơn, Phú Hoà, Thủ Dầu Một, Bình Dương</p>
+                        <a href="https://maps.google.com/?q=06+Tr%E1%BA%A7n+V%C4%83n+%C6%A0n,+Ph%C3%BA+Ho%C3%A0,+Th%E1%BB%A7+D%E1%BA%A7u+M%E1%BB%99t,+B%C3%ACnh+D%C6%B0%C6%A1ng"
+                           target="_blank" class="sf-wish__maplink">
+                            Xem bản đồ lớn →
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    }
+</div>

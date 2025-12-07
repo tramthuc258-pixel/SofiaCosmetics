@@ -1,0 +1,190 @@
+﻿.sf-static, .sf-static * {
+	box-sizing: border-box;
+}
+
+.sf-static {
+	max-width: 1100px;
+	margin: 0 auto;
+	padding: 16px 0 40px;
+}
+
+.sf-static__title {
+	font-size: 30px;
+	font-weight: 800;
+	color: #222;
+	margin-bottom: 8px;
+}
+
+.sf-static__line {
+	width: 90px;
+	height: 2px;
+	background: #f3a6b6;
+	border-radius: 999px;
+	margin-bottom: 22px;
+}
+
+.sf-contact {
+	max-width: 980px;
+	margin: 0 auto;
+}
+
+.sf-contact__hero {
+	position: relative;
+	background: linear-gradient(180deg,#f08aa4,#e97795);
+	color: #fff;
+	border-radius: 12px;
+	padding: 82px 18px 32px;
+	text-align: center;
+	margin-bottom: 16px;
+}
+
+.sf-contact__badge {
+	position: absolute;
+	top: 16px;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 56px;
+	height: 56px;
+	border-radius: 14px;
+	background: rgba(255,255,255,.22);
+	display: grid;
+	place-items: center;
+	font-size: 22px;
+	color: #fff;
+	box-shadow: 0 6px 14px rgba(0,0,0,.12);
+}
+
+.sf-contact__hero h3 {
+	font-size: 20px;
+	font-weight: 800;
+	margin: 0 0 8px;
+}
+
+.sf-contact__hero p {
+	font-size: 14.5px;
+	line-height: 1.7;
+	opacity: .96;
+	margin: 0 auto;
+	max-width: 720px;
+}
+
+.sf-contact__channels {
+	display: grid;
+	grid-template-columns: repeat(2,1fr);
+	gap: 14px;
+	margin-bottom: 16px;
+}
+
+.sf-channel {
+	position: relative;
+	background: #fff;
+	border: 1px solid #eee;
+	border-radius: 12px;
+	padding: 14px 16px;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	text-decoration: none;
+	color: inherit;
+	box-shadow: 0 3px 10px rgba(0,0,0,.05);
+	transition: .2s;
+}
+
+	.sf-channel::before {
+		content: "";
+		position: absolute;
+		left: 0;
+		top: 10px;
+		bottom: 10px;
+		width: 4px;
+		border-radius: 99px;
+		background: #2f80ed;
+	}
+
+	.sf-channel:hover {
+		transform: translateY(-2px);
+	}
+
+.sf-channel__logo {
+	width: 46px;
+	height: 46px;
+	border-radius: 999px;
+	display: grid;
+	place-items: center;
+	font-weight: 900;
+	font-size: 18px;
+	color: #fff;
+	flex-shrink: 0;
+}
+
+	.sf-channel__logo.mess {
+		background: #1877f2;
+	}
+
+	.sf-channel__logo.zalo {
+		background: #0f6bff;
+		font-size: 13px;
+		font-weight: 800;
+	}
+
+.sf-channel__text h4 {
+	font-size: 15px;
+	font-weight: 800;
+	margin: 0 0 2px;
+}
+
+.sf-channel__text span {
+	font-size: 13px;
+	color: #666;
+	font-weight: 600;
+}
+
+.sf-contact__mid {
+	text-align: center;
+	background: #fff3f5;
+	border-radius: 12px;
+	padding: 18px 16px;
+	margin: 14px auto;
+}
+
+	.sf-contact__mid h3 {
+		font-size: 16px;
+		font-weight: 800;
+		line-height: 1.5;
+		color: #222;
+		margin: 0 0 6px;
+	}
+
+		.sf-contact__mid h3 b {
+			color: #f19aac;
+			font-weight: 900;
+		}
+
+	.sf-contact__mid .mid-body {
+		font-size: 13.6px;
+		line-height: 1.7;
+		color: #666;
+		max-width: 860px;
+		margin: 0 auto;
+	}
+
+.sf-contact__strong {
+	margin-top: 8px;
+	font-size: 13.6px;
+	font-weight: 700;
+	color: #f19aac;
+}
+
+.sf-contact__map iframe {
+	width: 100%;
+	height: 360px;
+	border: 0;
+	border-radius: 10px;
+	box-shadow: 0 3px 12px rgba(0,0,0,.06);
+}
+
+@media(max-width:600px) {
+	.sf-contact__channels {
+		grid-template-columns: 1fr;
+	}
+}

@@ -1,0 +1,148 @@
+﻿@model IEnumerable<SofiaCosmetics.Models.SLIDER>
+@using System.Linq
+@using System.Text.RegularExpressions
+
+@{
+    // Link mặc định cho nút "Mua sắm ngay"
+    var defaultBuyLink = "/danh-muc/san-pham";
+
+    // chỉ lấy slider đang hiển thị
+    var sliders = (Model ?? Enumerable.Empty<SofiaCosmetics.Models.SLIDER>())
+                    .Where(x => x.TrangThai == true)
+                    .OrderBy(x => x.ThuTu ?? 0)
+                    .ThenByDescending(x => x.MaSlider)
+                    .ToList();
+}
+
+<section class="hero-area">
+    <div class="container">
+        <div class="row">
+
+            <!-- SLIDER LỚN BÊN TRÁI -->
+            <div class="col-lg-8 col-12 custom-padding-right">
+                <div class="slider-head">
+                    <div class="hero-slider">
+
+                        @if (sliders.Any())
+                        {
+                            foreach (var s in sliders)
+                            {
+                                // =============================
+                                // Parse TieuDe: "span | title"
+                                // =============================
+                                string spanText = "";
+                                string mainTitle = s.TieuDe ?? "";
+
+                                if (!string.IsNullOrWhiteSpace(s.TieuDe) && s.TieuDe.Contains("|"))
+                                {
+                                    var tParts = s.TieuDe.Split('|');
+                                    spanText = tParts.ElementAtOrDefault(0)?.Trim() ?? "";
+                                    mainTitle = tParts.ElementAtOrDefault(1)?.Trim() ?? "";
+                                }
+
+                                // =============================
+                                // Parse MoTa: "desc | price"
+                                // =============================
+                                string descText = s.MoTa ?? "";
+                                string priceText = "";
+
+                                if (!string.IsNullOrWhiteSpace(s.MoTa) && s.MoTa.Contains("|"))
+                                {
+                                    var dParts = s.MoTa.Split('|');
+                                    descText = dParts.ElementAtOrDefault(0)?.Trim() ?? "";
+                                    priceText = dParts.ElementAtOrDefault(1)?.Trim() ?? "";
+                                }
+
+                                // format giá: nếu là số thì thêm dấu chấm ngăn cách
+                                string priceDisplay = "";
+                                if (!string.IsNullOrWhiteSpace(priceText))
+                                {
+                                    // lấy số ra
+                                    var digits = new string(priceText.Where(char.IsDigit).ToArray());
+                                    if (decimal.TryParse(digits, out var num))
+                                    {
+                                        priceDisplay = num.ToString("#,0").Replace(",", ".") + " Đ";
+                                    }
+                                    else
+                                    {
+                                        priceDisplay = priceText; // fallback nếu admin nhập chữ
+                                    }
+                                }
+
+                                // Link nút mua sắm
+                                var buyLink = string.IsNullOrWhiteSpace(s.Link) ? defaultBuyLink : s.Link;
+
+                                <div class="single-slider"
+                                     style="background-image:url('@Url.Content(s.HinhAnh ?? "")');">
+                                    <div class="content">
+                                        <h2>
+                                            @if (!string.IsNullOrWhiteSpace(spanText))
+                                            {
+                                                <span>@spanText</span>
+                                            }
+                                            @mainTitle
+                                        </h2>
+
+                                        @if (!string.IsNullOrWhiteSpace(descText))
+                                        {
+                                            <p>@descText</p>
+                                        }
+
+                                        @if (!string.IsNullOrWhiteSpace(priceDisplay))
+                                        {
+                                            <h3><span>Giá chỉ từ</span> @priceDisplay</h3>
+                                        }
+
+                                        <div class="button">
+                                            <a href="@buyLink" class="btn">Mua sắm ngay</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <!-- FALLBACK nếu chưa có slider nào -->
+                            <div class="single-slider"
+                                 style="background-image:url('@Url.Content("~/images/slider/slider_1.jpg")');">
+                                <div class="content">
+                                    <h2>
+                                        <span>Sản phẩm mới ra mắt</span>
+                                        SofiaCosmetics
+                                    </h2>
+                                    <p>
+                                        Chào mừng bạn đến với SofiaCosmetics. Hãy thêm slider ở trang Admin để hiển thị tại đây.
+                                    </p>
+                                    <h3><span>Giá chỉ từ</span> 100.000 Đ</h3>
+                                    <div class="button">
+                                        <a href="@defaultBuyLink" class="btn">Mua sắm ngay</a>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                    </div> <!-- End Hero Slider -->
+                </div>
+            </div>
+
+            <!-- BANNER NHỎ BÊN PHẢI  -->
+            <div class="col-lg-4 col-12">
+                <div class="row">
+                    <div class="col-lg-12 col-md-6 col-12 md-custom-padding">
+                        <div class="hero-small-banner"
+                             style="background-image:url('@Url.Content("~/images/slider/slider_3.jpg")');">
+                        </div>
+                    </div>
+
+                    <div class="col-lg-12 col-md-6 col-12">
+                        <div class="hero-small-banner style2"
+                             style="background-image:url('@Url.Content("~/images/slider/slider_4.jpg")');">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+<!-- End Hero Area -->

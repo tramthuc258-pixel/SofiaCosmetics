@@ -1,0 +1,77 @@
+﻿@model SofiaCosmetics.Models.TINTUC
+@using System
+@using System.Web
+
+@{
+    ViewBag.Title = Model?.TenTrang ?? "Chi tiết tin tức";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    // format ngày an toàn (tránh lỗi ToString("dd/MM/yyyy"))
+    string ngay = "";
+    try { ngay = Convert.ToDateTime(Model.NgayTao).ToString("dd/MM/yyyy"); }
+    catch { ngay = ""; }
+}
+
+<section class="news-detail container">
+    <h1 class="detail-title">@Model.TenTrang</h1>
+
+    @if (!string.IsNullOrEmpty(ngay))
+    {
+        <div class="detail-meta">@ngay</div>
+    }
+
+    <div class="detail-content">
+        @Html.Raw(Model.NoiDung)
+    </div>
+
+    <div class="detail-back">
+        <a href="/tin-tuc">← Quay lại tin tức</a>
+    </div>
+</section>
+
+<style>
+    .news-detail {
+        padding: 24px 0 40px;
+        max-width: 920px;
+    }
+
+    .detail-title {
+        font-size: 28px;
+        font-weight: 800;
+        line-height: 1.3;
+        margin: 0 0 8px;
+    }
+
+    .detail-meta {
+        font-size: 14px;
+        color: #888;
+        margin-bottom: 18px;
+    }
+
+    .detail-content {
+        font-size: 16px;
+        line-height: 1.8;
+        color: #222;
+    }
+
+        .detail-content img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+
+    .detail-back {
+        margin-top: 22px;
+    }
+
+        .detail-back a {
+            color: #ff7aa8;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+            .detail-back a:hover {
+                text-decoration: underline;
+            }
+</style>

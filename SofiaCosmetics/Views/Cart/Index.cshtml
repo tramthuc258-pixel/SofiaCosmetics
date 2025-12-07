@@ -1,0 +1,199 @@
+﻿@model List<SofiaCosmetics.Models.ViewModels.CartItem>
+@{
+    ViewBag.Title = "Giỏ hàng";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container py-4">
+
+    <h2 class="fw-bold mb-4 text-center">🛒 Giỏ hàng của bạn</h2>
+
+    @if (Model == null || Model.Count == 0)
+    {
+        <div class="text-center py-5">
+            <i class="lni lni-cart fs-1 text-muted"></i>
+            <h5 class="mt-3 text-muted">Giỏ hàng của bạn đang trống.</h5>
+            <a href="@Url.Action("Index","Home")" class="btn btn-pink mt-3 px-4">
+                <i class="lni lni-shopping-basket"></i> Tiếp tục mua sắm
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+
+            <div class="col-lg-8">
+
+                <div class="cart-box p-3 rounded shadow-sm mb-4">
+
+                    @foreach (var item in Model)
+                    {
+                        <div class="cart-item d-flex gap-3 align-items-center p-3 border-bottom">
+
+                            <!-- IMAGE -->
+                            <img src="@Url.Content(item.HinhAnh ?? "~/images/products/no-image.png")"
+                                 class="cart-img" />
+
+                            <div class="flex-grow-1">
+
+                                <!-- NAME -->
+                                <h6 class="fw-bold">@item.TenSP</h6>
+                                <p class="text-muted mb-1">@item.TenBienThe</p>
+
+                                <!-- PRICE -->
+                                <div class="text-danger fw-semibold mb-2">
+                                    @String.Format("{0:N0} ₫", item.Gia)
+                                </div>
+
+                                <!-- QUANTITY CONTROL -->
+                                <form action="@Url.Action("CapNhat","Cart")" method="get" class="d-flex align-items-center">
+                                    <input type="hidden" name="maCTSP" value="@item.MaCTSP" />
+
+                                    <button type="button" class="qty-btn" onclick="changeQty(@item.MaCTSP, -1)">−</button>
+
+                                    <input id="qty_@item.MaCTSP"
+                                           type="number"
+                                           name="soLuong"
+                                           value="@item.SoLuong"
+                                           class="qty-input"
+                                           min="1" />
+
+                                    <button type="button" class="qty-btn" onclick="changeQty(@item.MaCTSP, 1)">+</button>
+
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary ms-2">Lưu</button>
+                                </form>
+
+                            </div>
+
+                            <!-- DELETE -->
+                            <a href="@Url.Action("XoaKhoiGio","Cart", new { maCTSP = item.MaCTSP })"
+                               class="btn btn-outline-danger btn-sm ms-2">
+                                <i class="lni lni-trash-can"></i>
+                            </a>
+
+                        </div>
+                    }
+
+                </div>
+
+                <a href="@Url.Action("XoaTatCa","Cart")"
+                   class="btn btn-outline-danger px-4">
+                    🗑 Xóa toàn bộ giỏ hàng
+                </a>
+
+            </div>
+
+            <!-- ================= RIGHT: ORDER SUMMARY ================= -->
+            <div class="col-lg-4">
+
+                <div class="summary-box p-4 rounded shadow-sm">
+
+                    <h5 class="fw-bold mb-3">Thông tin đơn hàng</h5>
+
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Tạm tính</span>
+                        <span class="fw-semibold">
+                            @String.Format("{0:N0} ₫", Model.Sum(x => x.ThanhTien))
+                        </span>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Giảm giá</span>
+                        <span class="text-success fw-semibold">0 ₫</span>
+                    </div>
+
+                    <hr />
+
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="fw-bold">Tổng cộng</span>
+                        <span class="fw-bold text-danger fs-5">
+                            @String.Format("{0:N0} ₫", Model.Sum(x => x.ThanhTien))
+                        </span>
+                    </div>
+
+                    <a href="@Url.Action("Index","Checkout")"
+                       class="btn btn-pink w-100 py-2 fw-bold fs-6">
+                        <i class="lni lni-credit-cards"></i> Thanh toán ngay
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+    }
+</div>
+
+
+<!-- ================= CSS ================= -->
+<style>
+
+    .cart-box {
+        background: #fff;
+        border: 1px solid #ffe1ea;
+    }
+
+    .cart-item:last-child {
+        border-bottom: none !important;
+    }
+
+    .cart-img {
+        width: 90px;
+        height: 90px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 1px solid #f5c3d1;
+    }
+
+    /* Quantity box */
+    .qty-btn {
+        width: 32px;
+        height: 32px;
+        border: 1px solid #ffb6c1;
+        background: #ffe6ee;
+        border-radius: 6px;
+        font-weight: bold;
+        color: #ff6f91;
+    }
+
+        .qty-btn:hover {
+            background: #ff6f91;
+            color: #fff;
+        }
+
+    .qty-input {
+        width: 55px;
+        height: 32px;
+        text-align: center;
+        border: 1px solid #ffb6c1;
+        border-radius: 6px;
+        margin: 0 6px;
+    }
+
+    .summary-box {
+        background: #fffdfd;
+        border: 1px solid #ffc9d6;
+    }
+
+    .btn-pink {
+        background: #ff6f91;
+        color: white;
+        border: none;
+    }
+
+        .btn-pink:hover {
+            background: #ff3d6f;
+            color: white;
+        }
+</style>
+
+
+<!-- ================= JS: UPDATE QUANTITY BOX ================= -->
+<script>
+    function changeQty(id, amount) {
+        let input = document.getElementById("qty_" + id);
+        let newVal = parseInt(input.value) + amount;
+        if (newVal < 1) newVal = 1;
+        input.value = newVal;
+    }
+</script>

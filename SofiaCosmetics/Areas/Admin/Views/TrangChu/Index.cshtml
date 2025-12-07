@@ -1,0 +1,273 @@
+﻿@model IEnumerable<SofiaCosmetics.Models.CHITIETDONHANG>
+@{
+    ViewBag.Title = "Bảng điều khiển";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+@using System.Linq
+@{
+    var top = ViewBag.TopSanPham as List<SofiaCosmetics.Models.SanPhamBanChay>;
+    var sapHet = ViewBag.SanPhamSapHet as List<SofiaCosmetics.Models.SanPhamSapHetDto>;
+    var donGanDay = ViewBag.DonGanDay as List<SofiaCosmetics.Models.DonGanDayDto>;
+
+    decimal doanhThuHomNay = ViewBag.DoanhThuHomNay != null ? (decimal)ViewBag.DoanhThuHomNay : 0m;
+    int khachMoiHomNay = ViewBag.KhachMoiHomNay != null ? (int)ViewBag.KhachMoiHomNay : 0;
+
+    int choXuLy = ViewBag.ChoXuLy != null ? (int)ViewBag.ChoXuLy : 0;
+    int dangGiao = ViewBag.DangGiao != null ? (int)ViewBag.DangGiao : 0;
+    int hoanThanh = ViewBag.HoanThanh != null ? (int)ViewBag.HoanThanh : 0;
+}
+
+
+<div class="row g-3">
+
+    <!-- CỘT TRÁI (2/3) -->
+    <div class="col-lg-8 d-flex flex-column gap-3">
+
+        <div class="card-soft mb-3">
+            <h5 class="mb-1">Xin chào, admin 👋</h5>
+            <div class="text-muted-soft">
+                Chúc bạn một ngày làm việc hiệu quả. Dưới đây là tổng quan hệ thống hôm nay.
+            </div>
+        </div>
+
+        <!-- HÀNG 1: DOANH THU + KHÁCH MỚI + ĐƠN HÀNG -->
+        <div class="row g-3">
+
+            <div class="col-md-4">
+                <div class="card-soft h-100">
+                    <div class="label">Doanh thu hôm nay</div>
+                    <div class="big-number">
+                        @String.Format("{0:N0}đ", doanhThuHomNay)
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card-soft h-100">
+                    <div class="label">Khách hàng mới</div>
+                    <div class="big-number">@khachMoiHomNay</div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card-soft h-100">
+                    <div class="label mb-2">Đơn hàng</div>
+                    <div class="order-status-box">
+                        <span>Chờ xử lý: <b>@choXuLy</b></span>
+                        <span>Đang giao: <b>@dangGiao</b></span>
+                        <span>Hoàn thành: <b>@hoanThanh</b></span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- HÀNG 2: BIỂU ĐỒ DOANH THU -->
+        <div class="card-soft">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="mb-0">Tổng quan doanh thu</h5>
+                <span class="text-muted-soft">7 ngày gần đây</span>
+            </div>
+            <div class="chart-area" style="position: relative; height: 200px;">
+                <canvas id="doanhThuChart"></canvas>
+            </div>
+        </div>
+
+        <!-- HÀNG 3: QUẢN LÝ SẢN PHẨM -->
+        <div class="row g-3">
+            <div class="col-md-7">
+                <div class="widget-card h-100">
+                    <h5>Quản lý sản phẩm (sắp hết hàng)</h5>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Sản phẩm</th>
+                                <th>Tồn kho</th>
+                                <th>Giá</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (sapHet != null && sapHet.Any())
+                            {
+                                foreach (var s in sapHet)
+                                {
+                                    <tr>
+                                        <td>@s.TenSP</td>
+                                        <td class="@(s.Ton < 5 ? "text-danger" : "")">@s.Ton</td>
+                                        <td>@String.Format("{0:N0}đ", s.Gia)</td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="3" class="text-muted-soft">
+                                        Không có sản phẩm sắp hết.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- GIÁ HÀNG / TÌNH TRẠNG -->
+            <div class="col-md-5">
+                <div class="widget-card h-100">
+                    <h5>Đơn hàng / Tình trạng</h5>
+                    <table>
+                        <tbody>
+                            <tr>
+                                <td>Chờ xử lý</td>
+                                <td class="text-end">@choXuLy</td>
+                            </tr>
+                            <tr>
+                                <td>Đang giao</td>
+                                <td class="text-end">@dangGiao</td>
+                            </tr>
+                            <tr>
+                                <td>Hoàn thành</td>
+                                <td class="text-end">@hoanThanh</td>
+                            </tr>
+                            <tr>
+                                <td>Hết hàng</td>
+                                <td class="text-end text-danger">
+                                    @(sapHet != null ? sapHet.Count() : 0)
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- CỘT PHẢI (1/3) -->
+    <div class="col-lg-4 d-flex flex-column gap-3">
+
+        <!-- SẢN PHẨM BÁN CHẠY -->
+        <div class="widget-card">
+            <h5>Sản phẩm bán chạy</h5>
+
+            @if (top != null && top.Any())
+            {
+                foreach (var item in top)
+                {
+                    <div class="best-product-item d-flex align-items-center gap-2 mb-2">
+                        <img src="@item.HinhAnh"
+                             style="width:55px;height:55px;object-fit:cover;border-radius:10px;" />
+                        <div>
+                            <div>@item.TenSP</div>
+                            <div class="text-muted-soft">@item.SoLuongBan đã bán</div>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="text-muted-soft">Không có dữ liệu sản phẩm bán chạy.</div>
+
+                if (ViewBag.Error != null)
+                {
+                    <div style="color:red">@ViewBag.Error</div>
+                }
+            }
+        </div>
+
+        <!-- ĐƠN HÀNG GẦN ĐÂY -->
+        <div class="widget-card">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="mb-0">Đơn hàng gần đây</h5>
+                <span class="text-muted-soft">Mới nhất</span>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Mã đơn</th>
+                        <th>Khách</th>
+                        <th class="text-end">Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (donGanDay != null && donGanDay.Count > 0)
+                    {
+                        foreach (var d in donGanDay)
+                        {
+                            <tr>
+                                <td>#@d.MaDH</td>
+                                <td>@d.Khach</td>
+                                <td class="text-end">
+                                    <span class="badge-soft">@d.TrangThai</span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="3" class="text-muted-soft">
+                                Chưa có đơn hàng.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // Lấy dữ liệu thật từ ViewBag
+    const labels = @Html.Raw(Json.Encode(ViewBag.DoanhThuLabels));
+    const dataValues = @Html.Raw(Json.Encode(ViewBag.DoanhThuValues));
+
+    const ctx = document.getElementById('doanhThuChart').getContext('2d');
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: dataValues,
+                borderColor: '#E9A178',
+                borderWidth: 3,
+                tension: 0.45,
+                fill: true,
+                backgroundColor: 'rgba(233, 161, 120, 0.15)',
+                pointRadius: 0,
+                pointHoverRadius: 0,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#999', font: { size: 12 } }
+                },
+                y: {
+                    grid: { color: '#f3d7c6', drawBorder: false },
+                    ticks: {
+                        color: '#999',
+                        font: { size: 12 },
+                        callback: function (value) {
+                            return value.toLocaleString('vi-VN');
+                        }
+                    },
+                    beginAtZero: true,
+                    suggestedMax: 10000000
+                }
+            }
+        }
+    });
+</script>

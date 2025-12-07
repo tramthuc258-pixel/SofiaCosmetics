@@ -1,0 +1,89 @@
+﻿@model PagedList.IPagedList<SofiaCosmetics.Models.ViewModels.SanPhamViewModel>
+@using PagedList.Mvc;
+
+@{
+    ViewBag.Title = "Kết quả tìm kiếm";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container py-4">
+    <h3 class="mb-4">
+        Kết quả tìm kiếm cho:
+        <span class="text-pink fw-semibold">"@ViewBag.TuKhoa"</span>
+    </h3>
+
+    @if (!Model.Any())
+    {
+        <p>Không tìm thấy sản phẩm nào phù hợp.</p>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var item in Model)
+            {
+                <div class="col-lg-3 col-md-4 col-sm-6 col-12 mb-4">
+                    <div class="single-product">
+                        <!-- Hình sản phẩm -->
+                        <div class="product-image">
+                            @* Hiển thị nhãn khuyến mãi nếu có *@
+                            @if (item.PhanTramGiam > 0)
+                            {
+                                <span class="discount-badge">-@item.PhanTramGiam% OFF</span>
+                            }
+
+                            <img src="@Url.Content("~" + (item.HinhAnh ?? "/images/products/no-image.jpg"))"
+                                 alt="@item.TenSP" />
+
+                            <!-- Overlay khi hover -->
+                            <div class="overlay">
+                                <button type="button" class="btn btn-pink quick-view-btn" data-id="@item.MaSP">
+                                    <i class="lni lni-cart"></i> Thêm giỏ hàng
+                                </button>
+
+                                <a href="javascript:void(0);"
+                                   class="btn favorite add-to-wishlist"
+                                   data-id="@item.MaSP">
+                                    <i class="lni lni-heart"></i> Yêu thích
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Thông tin sản phẩm -->
+                        <div class="product-info">
+                            <h4 class="title">
+                                <a href="@Url.Action("ChiTietSP", "Home", new { id = item.MaSP })">
+                                    @item.TenSP
+                                </a>
+                            </h4>
+
+                            @if (item.PhanTramGiam > 0)
+                            {
+                                <div class="price">
+                                    <span class="old-price">@String.Format("{0:N0}₫", item.Gia)</span>
+                                    <span class="new-price">@String.Format("{0:N0}₫", item.GiaKhuyenMai)</span>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="price">
+                                    <span>@String.Format("{0:N0}₫", item.Gia)</span>
+                                </div>
+                            }
+                        </div>
+
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!--  PHÂN TRANG  -->
+        <div class="pagination-container">
+            @Html.PagedListPager(
+                Model,
+                page => Url.Action("TimKiem", new { keyword = ViewBag.TuKhoa, page }),
+                PagedListRenderOptions.ClassicPlusFirstAndLast
+            )
+        </div>
+    }
+</div>
+

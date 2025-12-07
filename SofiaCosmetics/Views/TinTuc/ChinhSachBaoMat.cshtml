@@ -1,0 +1,137 @@
+﻿@model SofiaCosmetics.Models.TINTUC
+@using System.Web
+@using System.Text.RegularExpressions
+@using System.Linq
+@using System.Collections.Generic
+<link href="~/Content/chinhsachbaomat.css" rel="stylesheet" />
+@{
+    ViewBag.Title = Model.TenTrang;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    string rawHtml = HttpUtility.HtmlDecode(Model.NoiDung ?? "");
+
+    Func<string, string> StripHtml = s =>
+        string.IsNullOrWhiteSpace(s) ? "" : Regex.Replace(s, "<[^>]*>", "").Trim();
+
+    Func<string, string> Norm = s =>
+        (s ?? "").Replace("\r\n", "\n").Replace("\r", "\n").Trim();
+
+    Func<string, List<string>> SplitBlocks = s =>
+    {
+        var t = Norm(StripHtml(s));
+        if (string.IsNullOrWhiteSpace(t)) return new List<string>();
+        t = Regex.Replace(t, @"^\s*---\s*$", "\n---\n", RegexOptions.Multiline);
+        return Regex.Split(t, @"(?:^|\n)\s*---\s*(?:\n|$)")
+                    .Select(b => b.Trim())
+                    .Where(b => !string.IsNullOrWhiteSpace(b))
+                    .ToList();
+    };
+
+    bool hasSeparator = Regex.IsMatch(Norm(StripHtml(rawHtml)), @"(?:^|\n)\s*---\s*(?:\n|$)");
+
+    Func<List<string>, List<(string title, string desc)>> ParsePairList = lines =>
+    {
+        var res = new List<(string, string)>();
+        foreach (var ln in lines)
+        {
+            var s = ln.Trim();
+            s = Regex.Replace(s, @"^\d+\.\s*", "");
+            s = Regex.Replace(s, @"^-\s*", "");
+            if (string.IsNullOrWhiteSpace(s)) continue;
+
+            var parts = s.Split(new[] { "|" }, 2, System.StringSplitOptions.None)
+                         .Select(p => p.Trim()).ToArray();
+
+            var title = parts.ElementAtOrDefault(0) ?? "";
+            var desc = parts.ElementAtOrDefault(1) ?? "";
+            if (!string.IsNullOrWhiteSpace(title))
+                res.Add((title, desc));
+        }
+        return res;
+    };
+
+    var blocks = hasSeparator ? SplitBlocks(rawHtml) : new List<string>();
+
+    var heroLines = blocks.ElementAtOrDefault(0) != null
+        ? Norm(blocks[0]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+
+    string heroTitle = heroLines.ElementAtOrDefault(0) ?? "CHÍNH SÁCH BẢO MẬT";
+    string heroDesc = heroLines.ElementAtOrDefault(1) ?? "SofiaCosmetics luôn tôn trọng và bảo vệ quyền riêng tư của bạn trong suốt quá trình mua sắm.";
+    string heroNote = heroLines.ElementAtOrDefault(2) ?? "Thông tin bạn cung cấp chỉ dùng để xử lý đơn hàng và chăm sóc dịch vụ tốt hơn.";
+
+    var cardLines = blocks.ElementAtOrDefault(1) != null
+        ? Norm(blocks[1]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+    var cards = ParsePairList(cardLines);
+    if (cards.Count == 0)
+    {
+        cards = new List<(string, string)>{
+            ("Mục tiêu thu thập","Để xử lý đơn hàng, tư vấn và chăm sóc khách hàng tốt hơn."),
+            ("Phạm vi thông tin","Họ tên, số điện thoại, email, địa chỉ nhận hàng, lịch sử mua."),
+            ("Cam kết bảo mật","Không chia sẻ dữ liệu cho bên thứ ba khi chưa có sự đồng ý.")
+        };
+    }
+    var cardIcons = new[] { "bi-shield-check", "bi-card-checklist", "bi-lock-fill" };
+
+    var secLines = blocks.ElementAtOrDefault(2) != null
+        ? Norm(blocks[2]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+    var sections = ParsePairList(secLines);
+    if (sections.Count == 0)
+    {
+        sections = new List<(string, string)>{
+            ("1. Mục đích thu thập thông tin","SofiaCosmetics thu thập thông tin để xác nhận đơn hàng, liên hệ giao hàng, hỗ trợ đổi trả, tư vấn sản phẩm và nâng cao trải nghiệm mua sắm."),
+            ("2. Phạm vi thông tin thu thập","Bao gồm: họ tên, số điện thoại, email, địa chỉ nhận hàng, nội dung trao đổi tư vấn, lịch sử mua hàng và phản hồi dịch vụ."),
+            ("3. Sử dụng thông tin","Thông tin chỉ được dùng nội bộ để xử lý đơn hàng, chăm sóc khách hàng, thông báo ưu đãi khi bạn đồng ý nhận tin."),
+            ("4. Chia sẻ thông tin","SofiaCosmetics không bán/trao đổi dữ liệu. Thông tin chỉ chia sẻ với đơn vị vận chuyển hoặc đối tác thanh toán để hoàn tất đơn hàng."),
+            ("5. Lưu trữ và bảo mật","Dữ liệu được lưu trữ trên hệ thống có kiểm soát truy cập. Mọi thao tác đều tuân thủ nguyên tắc bảo mật và an toàn thông tin."),
+            ("6. Quyền của khách hàng","Bạn có quyền yêu cầu xem/chỉnh sửa/xóa thông tin cá nhân hoặc ngừng nhận thông báo bất kỳ lúc nào qua Hotline/Zalo/Fanpage.")
+        };
+    }
+
+    var footLines = blocks.ElementAtOrDefault(3) != null
+        ? Norm(blocks[3]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+    string footNote = footLines.FirstOrDefault() ?? "SofiaCosmetics chân thành cảm ơn bạn đã tin tưởng và ủng hộ 💗";
+}
+
+<div class="sf-static container">
+    <h2 class="sf-static__title">@Model.TenTrang</h2>
+    <div class="sf-static__line"></div>
+
+    <section class="pri-hero">
+        <div class="pri-hero__badge"><i class="bi bi-shield-lock-fill"></i></div>
+        <h1 class="pri-hero__title">@heroTitle</h1>
+        <p class="pri-hero__desc">@heroDesc</p>
+        <div class="pri-hero__note">@heroNote</div>
+    </section>
+
+    <section class="pri-cards">
+        @for (int i = 0; i < cards.Count; i++)
+        {
+            var c = cards[i];
+            var icon = cardIcons.ElementAtOrDefault(i) ?? "bi-stars";
+            <div class="pri-card">
+                <div class="pri-card__icon"><i class="bi @icon"></i></div>
+                <h3>@c.title</h3>
+                <p>@c.desc</p>
+            </div>
+        }
+    </section>
+
+    <section class="pri-section">
+        <div class="pri-grid-2">
+            @for (int i = 0; i < sections.Count; i++)
+            {
+                var s = sections[i];
+                <div class="pri-box">
+                    <h3 class="pri-box__title">@s.title</h3>
+                    <p class="pri-box__desc">@s.desc</p>
+                </div>
+            }
+        </div>
+    </section>
+
+    <div class="pri-footer">@footNote</div>
+</div>

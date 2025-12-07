@@ -1,0 +1,229 @@
+﻿@model SofiaCosmetics.Models.TINTUC
+@using System.Web
+@using System.Text.RegularExpressions
+@using System.Linq
+@using System.Collections.Generic
+<link href="~/Content/chinhsachdoitra.css" rel="stylesheet" />
+@{
+    ViewBag.Title = Model.TenTrang;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    string rawHtml = HttpUtility.HtmlDecode(Model.NoiDung ?? "");
+
+    Func<string, string> StripHtml = s =>
+        string.IsNullOrWhiteSpace(s) ? "" : Regex.Replace(s, "<[^>]*>", "").Trim();
+
+    Func<string, string> Norm = s =>
+        (s ?? "").Replace("\r\n", "\n").Replace("\r", "\n").Trim();
+
+    Func<string, List<string>> SplitBlocks = s =>
+    {
+        var t = Norm(StripHtml(s));
+        if (string.IsNullOrWhiteSpace(t)) return new List<string>();
+        t = Regex.Replace(t, @"^\s*---\s*$", "\n---\n", RegexOptions.Multiline);
+        return Regex.Split(t, @"(?:^|\n)\s*---\s*(?:\n|$)")
+                    .Select(b => b.Trim())
+                    .Where(b => !string.IsNullOrWhiteSpace(b))
+                    .ToList();
+    };
+
+    bool hasSeparator = Regex.IsMatch(Norm(StripHtml(rawHtml)), @"(?:^|\n)\s*---\s*(?:\n|$)");
+
+    Func<List<string>, List<(string title, string desc)>> ParsePairList = lines =>
+    {
+        var res = new List<(string, string)>();
+        foreach (var ln in lines)
+        {
+            var s = ln.Trim();
+            s = Regex.Replace(s, @"^\d+\.\s*", "");
+            s = Regex.Replace(s, @"^-\s*", "");
+            if (string.IsNullOrWhiteSpace(s)) continue;
+
+            var parts = s.Split(new[] { "|" }, 2, System.StringSplitOptions.None)
+                         .Select(p => p.Trim()).ToArray();
+
+            var title = parts.ElementAtOrDefault(0) ?? "";
+            var desc = parts.ElementAtOrDefault(1) ?? "";
+            if (!string.IsNullOrWhiteSpace(title))
+                res.Add((title, desc));
+        }
+        return res;
+    };
+
+    var blocks = hasSeparator ? SplitBlocks(rawHtml) : new List<string>();
+
+    // HERO
+    var heroLines = blocks.ElementAtOrDefault(0) != null
+        ? Norm(blocks[0]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+
+    string heroTitle = heroLines.ElementAtOrDefault(0) ?? "CHÍNH SÁCH ĐỔI TRẢ";
+    string heroDesc = heroLines.ElementAtOrDefault(1) ?? "SofiaCosmetics cam kết đổi trả minh bạch để bạn yên tâm mua sắm.";
+    string heroNote = heroLines.ElementAtOrDefault(2) ?? "Cam kết mang đến cho bạn quy trình đổi trả đơn giản, nhanh chóng và rõ ràng.";
+
+    // Highlights (3 cái)
+    var hlLines = blocks.ElementAtOrDefault(1) != null
+        ? Norm(blocks[1]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+    var highlights = ParsePairList(hlLines);
+    if (highlights.Count == 0)
+    {
+        highlights = new List<(string, string)>{
+            ("Điều kiện đổi trả","Sản phẩm còn nguyên tem/niêm phong, chưa qua sử dụng."),
+            ("Thời gian đổi trả","Trong vòng 07 ngày kể từ khi nhận hàng."),
+            ("Chi phí đổi trả","Miễn phí nếu lỗi từ shop/nhà vận chuyển.")
+        };
+    }
+    var hlIcons = new[] { "bi-clipboard2-check", "bi-clock-history", "bi-truck" };
+
+    // Steps
+    var stepLines = blocks.ElementAtOrDefault(2) != null
+        ? Norm(blocks[2]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+    var steps = ParsePairList(stepLines);
+    if (steps.Count == 0)
+    {
+        steps = new List<(string, string)>{
+            ("Bước 1","Gửi yêu cầu đổi trả qua Hotline/Zalo/Fanpage kèm mã đơn + video unbox."),
+            ("Bước 2","Shop xác nhận tình trạng lỗi và hướng xử lý trong 24h."),
+            ("Bước 3","Bạn đóng gói lại sản phẩm đúng quy định và gửi về địa chỉ shop."),
+            ("Bước 4","Shop kiểm tra, đổi sản phẩm mới hoặc hoàn tiền cho bạn.")
+        };
+    }
+
+    // Not supported
+    var noLines = blocks.ElementAtOrDefault(3) != null
+        ? Norm(blocks[3]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+    if (noLines.Count == 0)
+    {
+        noLines = new List<string>{
+            "Sản phẩm đã qua sử dụng, mất tem/seal, móp hộp do người dùng.",
+            "Không có video unbox ngay khi nhận hàng.",
+            "Quá thời hạn 07 ngày hoặc tự ý gửi hàng về mà chưa liên hệ.",
+            "Sản phẩm khuyến mãi/giảm giá sâu (trừ khi lỗi do shop)."
+        };
+    }
+
+    // Refund box
+    var rfLines = blocks.ElementAtOrDefault(4) != null
+        ? Norm(blocks[4]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+
+    string refundTitle = rfLines.ElementAtOrDefault(0) ?? "HOÀN TIỀN";
+    string refundBody = rfLines.ElementAtOrDefault(1) ?? "Nếu sản phẩm hết hàng để đổi, shop hoàn tiền 100% theo giá trị bạn đã thanh toán.";
+    string refundTime = rfLines.ElementAtOrDefault(2) ?? "Thời gian hoàn tiền: 3–7 ngày làm việc (tuỳ ngân hàng/ ví điện tử).";
+
+    // FAQ
+    var faqLines = blocks.ElementAtOrDefault(5) != null
+        ? Norm(blocks[5]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+    var faq = ParsePairList(faqLines);
+    if (faq.Count == 0)
+    {
+        faq = new List<(string, string)>{
+            ("Làm sao để gửi yêu cầu đổi trả?","Bạn nhắn Hotline/Zalo/Fanpage và gửi kèm mã đơn + video unbox. Tụi mình sẽ hỗ trợ ngay."),
+            ("Shop có hỗ trợ đổi sang sản phẩm khác không?","Có. Nếu bạn muốn đổi sang sản phẩm khác giá trị tương đương, Sofia sẽ tư vấn và hỗ trợ đổi."),
+            ("Khi nào mình nhận được tiền hoàn?","Sau khi shop nhận hàng và xác nhận hợp lệ, Sofia xử lý hoàn trong 3–7 ngày làm việc.")
+        };
+    }
+
+    // contact
+    var cLines = blocks.ElementAtOrDefault(6) != null
+        ? Norm(blocks[6]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+    string hotline = cLines.ElementAtOrDefault(0) ?? "0989 764 401";
+    string email = cLines.ElementAtOrDefault(1) ?? "support@sofiacosmetics.vn";
+    string fanpage = cLines.ElementAtOrDefault(2) ?? "m.me/sofiacosmetics";
+    string addr = cLines.ElementAtOrDefault(3) ?? "06 Trần Văn Ơn, Phú Hòa, Thủ Dầu Một, Bình Dương";
+}
+
+<div class="sf-static container">
+    <h2 class="sf-static__title">@Model.TenTrang</h2>
+    <div class="sf-static__line"></div>
+
+    <section class="ret-hero ret-hero--light">
+        <div class="ret-hero__badge"><i class="bi bi-arrow-repeat"></i></div>
+        <h1 class="ret-hero__title">@heroTitle</h1>
+        <p class="ret-hero__desc">@heroDesc</p>
+        <div class="ret-hero__note">@heroNote</div>
+    </section>
+
+    <section class="ret-highlights">
+        @for (int i = 0; i < highlights.Count; i++)
+        {
+            var h = highlights[i];
+            var icon = hlIcons.ElementAtOrDefault(i) ?? "bi-stars";
+            <div class="ret-hl">
+                <div class="ret-hl__icon"><i class="bi @icon"></i></div>
+                <div class="ret-hl__text">
+                    <h3>@h.title</h3>
+                    <p>@h.desc</p>
+                </div>
+            </div>
+        }
+    </section>
+
+    <section class="ret-section">
+        <h3 class="ret-section__title">Quy trình đổi trả</h3>
+        <div class="ret-steps">
+            @for (int i = 0; i < steps.Count; i++)
+            {
+                var st = steps[i];
+                <div class="ret-step">
+                    <div class="ret-step__num">@(i+1)</div>
+                    <div class="ret-step__body">
+                        <b>@st.title</b>
+                        <p>@st.desc</p>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+
+    <section class="ret-grid-2 ret-section">
+        <div>
+            <h3 class="ret-section__title">Trường hợp không hỗ trợ</h3>
+            <ul class="ret-list">
+                @foreach (var it in noLines)
+                {
+                    var txt = Regex.Replace(it, @"^-\s*", "");
+                    <li>@txt</li>
+                }
+            </ul>
+        </div>
+
+        <div class="ret-refund">
+            <h3 class="ret-refund__title">@refundTitle</h3>
+            <p>@refundBody</p>
+            <div class="ret-refund__time">@refundTime</div>
+        </div>
+    </section>
+
+    <section class="ret-grid-2 ret-section">
+        <div>
+            <h3 class="ret-section__title">Câu hỏi thường gặp</h3>
+            <div class="ret-faq">
+                @for (int i = 0; i < faq.Count; i++)
+                {
+                    var qa = faq[i];
+                    <details class="ret-faq__item" @(i == 0 ? "open" : "")>
+                        <summary>@qa.title</summary>
+                        <div class="ret-faq__ans">@qa.desc</div>
+                    </details>
+                }
+            </div>
+        </div>
+
+        <div class="ret-contact">
+            <h3 class="ret-section__title">Liên hệ hỗ trợ đổi trả</h3>
+            <div class="ret-contact__grid">
+                <div class="ret-contact__item"><span>Hotline/Zalo</span><b>@hotline</b></div>
+                <div class="ret-contact__item"><span>Email</span><b>@email</b></div>
+                <div class="ret-contact__item"><span>Fanpage/Messenger</span><b>@fanpage</b></div>
+                <div class="ret-contact__item"><span>Địa chỉ nhận đổi trả</span><b>@addr</b></div>
+            </div>
+            <div class="ret-contact__note">Tụi mình sẽ xử lý nhanh nhất để bạn luôn yên tâm khi mua sắm tại Sofia 💗</div>
+        </div>
+    </section>
+</div>

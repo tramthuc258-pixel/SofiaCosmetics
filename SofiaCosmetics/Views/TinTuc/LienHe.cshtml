@@ -1,0 +1,98 @@
+﻿@model SofiaCosmetics.Models.TINTUC
+@using System.Web
+@using System.Text.RegularExpressions
+@using System.Linq
+@using System.Collections.Generic
+<link href="~/Content/lienhe.css" rel="stylesheet" />
+@{
+    ViewBag.Title = Model.TenTrang;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    string rawHtml = HttpUtility.HtmlDecode(Model.NoiDung ?? "");
+
+    Func<string, string> StripHtml = s =>
+        string.IsNullOrWhiteSpace(s) ? "" : Regex.Replace(s, "<[^>]*>", "").Trim();
+
+    Func<string, string> Norm = s =>
+        (s ?? "").Replace("\r\n", "\n").Replace("\r", "\n").Trim();
+
+    Func<string, List<string>> SplitBlocks = s =>
+    {
+        var t = Norm(StripHtml(s));
+        if (string.IsNullOrWhiteSpace(t)) return new List<string>();
+        t = Regex.Replace(t, @"^\s*---\s*$", "\n---\n", RegexOptions.Multiline);
+        return Regex.Split(t, @"(?:^|\n)\s*---\s*(?:\n|$)")
+                    .Select(b => b.Trim())
+                    .Where(b => !string.IsNullOrWhiteSpace(b))
+                    .ToList();
+    };
+
+    bool hasSeparator = Regex.IsMatch(Norm(StripHtml(rawHtml)), @"(?:^|\n)\s*---\s*(?:\n|$)");
+    var blocks = hasSeparator ? SplitBlocks(rawHtml) : new List<string>();
+
+    string heroTitle = blocks.ElementAtOrDefault(0) ?? "Chúng tôi luôn sẵn sàng hỗ trợ bạn";
+    string heroDesc = blocks.ElementAtOrDefault(1) ?? "Kết nối với đội ngũ SofiaCosmetics qua ứng dụng bạn yêu thích.\nChúng tôi luôn sẵn sàng hỗ trợ, bất cứ lúc nào, bất cứ nơi đâu.";
+    string messenger = blocks.ElementAtOrDefault(2) ?? "m.me/sofiacosmetics";
+    string zalo = blocks.ElementAtOrDefault(3) ?? "0696 784 401";
+    string midTitle = blocks.ElementAtOrDefault(4) ?? "Tại SofiaCosmetics, tụi mình không chỉ bán sản phẩm — tụi mình đồng hành cùng bạn!";
+    string midBody = blocks.ElementAtOrDefault(5) ?? "Bạn không đơn độc trên hành trình chăm sóc da. Đội ngũ SofiaCosmetics luôn sẵn sàng hỗ trợ bạn từ bước chọn sản phẩm, tư vấn cách dùng, đến chăm sóc sau mua.";
+    string midStrong = blocks.ElementAtOrDefault(6) ?? "Tận tâm – Nhanh chóng – Hiệu quả là cam kết của tụi mình dành cho bạn.";
+
+    string messengerUrl = (messenger ?? "").Trim().Replace("https://", "").Replace("http://", "");
+    if (string.IsNullOrWhiteSpace(messengerUrl))
+    {
+        messengerUrl = "m.me/sofiacosmetics";
+    }
+
+    string zaloPhone = (zalo ?? "").Replace(" ", "").Trim();
+    if (string.IsNullOrWhiteSpace(zaloPhone))
+    {
+        zaloPhone = "09xxxxxxxx";
+    }
+
+    string zaloUrl = "https://zalo.me/" + zaloPhone;
+
+    string mapEmbed =
+        "https://www.google.com/maps?q=06+Tr%E1%BA%A7n+V%C4%83n+%C6%A0n,+Ph%C3%BA+Ho%C3%A0,+Th%E1%BB%A7+D%E1%BA%A7u+M%E1%BB%99t,+B%C3%ACnh+D%C6%B0%C6%A1ng&output=embed";
+}
+
+<div class="sf-static container">
+    <h2 class="sf-static__title">@Model.TenTrang</h2>
+    <div class="sf-static__line"></div>
+
+    <section class="sf-contact">
+        <div class="sf-contact__hero">
+            <div class="sf-contact__badge"><i class="bi bi-stars"></i></div>
+            <h3>@heroTitle</h3>
+            <p>@Html.Raw(Norm(heroDesc).Replace("\n", "<br/>"))</p>
+        </div>
+
+        <div class="sf-contact__channels">
+            <a class="sf-channel" href="https://@messengerUrl" target="_blank">
+                <div class="sf-channel__logo mess"><i class="bi bi-messenger"></i></div>
+                <div class="sf-channel__text">
+                    <h4>Facebook Messenger</h4>
+                    <span>@messenger</span>
+                </div>
+            </a>
+
+            <a class="sf-channel" href="@zaloUrl" target="_blank">
+                <div class="sf-channel__logo zalo">Zalo</div>
+                <div class="sf-channel__text">
+                    <h4>Zalo</h4>
+                    <span>@zalo</span>
+                </div>
+            </a>
+        </div>
+
+        <div class="sf-contact__mid">
+            <h3>@Html.Raw(midTitle.Replace("SofiaCosmetics", "<b>SofiaCosmetics</b>"))</h3>
+            <p class="mid-body">@midBody</p>
+            <p class="sf-contact__strong">@midStrong</p>
+        </div>
+
+        <div class="sf-contact__map">
+            <iframe src="@mapEmbed" loading="lazy"></iframe>
+        </div>
+    </section>
+</div>

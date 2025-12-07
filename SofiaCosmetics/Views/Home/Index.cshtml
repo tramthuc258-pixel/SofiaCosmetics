@@ -1,0 +1,253 @@
+﻿
+@using SofiaCosmetics.Models
+@model SofiaCosmetics.Models.ViewModels.TrangChuViewModel
+@{
+    ViewBag.Title = "Trang chủ";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<!-- Hero, Trending Products, Banner, Shipping Info -->
+<!-- Start Trending Product Area -->
+<section class="trending-product section" style="margin-top: 12px;">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <div class="section-title text-center">
+                    <h2>Sản Phẩm Nổi Bật </h2>
+                    <p>Những sản phẩm được yêu thích nhất hiện nay</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            @foreach (var item in Model.TrendingProducts)
+            {
+                <div class="col-lg-3 col-md-6 col-12">
+                    <div class="single-product">
+                        <!-- Hình sản phẩm -->
+                        <div class="product-image">
+                            @* Hiển thị nhãn khuyến mãi nếu có *@
+                            @if (item.PhanTramGiam > 0)
+                            {
+                                <span class="discount-badge">-@item.PhanTramGiam% OFF</span>
+                            }
+
+                            <img src="@Url.Content("~" + (item.HinhAnh ?? "/images/products/no-image.jpg"))"
+                                 alt="@item.TenSP" />
+
+                            <!-- Overlay khi hover -->
+                            <div class="overlay">
+                                <button type="button" class="btn btn-pink quick-view-btn" data-id="@item.MaSP">
+                                    <i class="lni lni-cart"></i> Thêm giỏ hàng
+                                </button>
+
+                                <a href="javascript:void(0);"
+                                   class="btn favorite add-to-wishlist"
+                                   data-id="@item.MaSP">
+                                    <i class="lni lni-heart"></i> Yêu thích
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Thông tin sản phẩm -->
+                        <div class="product-info">
+                            <h4 class="title">
+                                <a href="@Url.Action("ChiTietSP", "Home", new { id = item.MaSP })">
+                                    @item.TenSP
+                                </a>
+                            </h4>
+
+                            @if (item.PhanTramGiam > 0)
+                            {
+                                <div class="price">
+                                    <span class="old-price">@String.Format("{0:N0}₫", item.Gia)</span>
+                                    <span class="new-price">@String.Format("{0:N0}₫", item.GiaKhuyenMai)</span>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="price">
+                                    <span>@String.Format("{0:N0}₫", item.Gia)</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+<!-- End Trending Product Area -->
+
+<!-- Start Call Action Area -->
+<section class="call-action section">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 offset-lg-2 col-12">
+                <div class="inner">
+                    <div class="content">
+                        <h2 class="wow fadeInUp" data-wow-delay=".4s">
+                            Hành trình mang lại vẻ đẹp tự nhiên cho phụ nữ Việt 🌺
+                        </h2>
+                        <p class="wow fadeInUp" data-wow-delay=".6s">
+                            Chúng tôi tin rằng mỗi người phụ nữ đều xứng đáng được yêu thương và tỏa sáng theo cách riêng.
+                        </p>
+                        <div class="button wow fadeInUp" data-wow-delay=".8s">
+                            <a href="/danh-muc/gioi-thieu" class="btn">Tìm hiểu thêm</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- End Call Action Area -->
+<!-- Start Banner Area -->
+<section class="bestseller section" style="margin-top: 40px;">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <div class="section-title text-center">
+                    <h2>Sản Phẩm Bán Chạy 🔥</h2>
+                    <p>Những sản phẩm được khách hàng tin dùng nhất</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide container -->
+        <div class="bestseller-slider owl-carousel">
+            @foreach (var item in Model.BestSellerProducts)
+            {
+                <div class="single-product bestseller-card">
+                    <div class="product-image">
+                        @if (item.PhanTramGiam > 0)
+                        {
+                            <span class="discount-badge">-@item.PhanTramGiam% OFF</span>
+                        }
+
+                        <img src="@Url.Content("~" + (item.HinhAnh ?? "/images/products/no-image.jpg"))"
+                             alt="@item.TenSP" />
+
+                        <div class="overlay">
+                            <button type="button" class="btn btn-pink quick-view-btn" data-id="@item.MaSP">
+                                <i class="lni lni-cart"></i> Thêm giỏ hàng
+                            </button>
+                            <a href="javascript:void(0);"
+                               class="btn favorite add-to-wishlist"
+                               data-id="@item.MaSP">
+                                <i class="lni lni-heart"></i> Yêu thích
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="product-info">
+                        <h4 class="title">
+                            <a href="@Url.Action("ChiTietSP", "Home", new { id = item.MaSP })">@item.TenSP</a>
+                        </h4>
+
+                        @if (item.PhanTramGiam > 0)
+                        {
+                            <div class="price">
+                                <span class="old-price">@String.Format("{0:N0}₫", item.Gia)</span>
+                                <span class="new-price">@String.Format("{0:N0}₫", item.GiaKhuyenMai)</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="price">
+                                <span>@String.Format("{0:N0}₫", item.Gia)</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+<!-- End Banner Area -->
+<!-- Start Shipping Info -->
+<section class="shipping-info">
+    <div class="container">
+        <ul>
+            <!-- Free Shipping -->
+            <li>
+                <div class="media-icon">
+                    <i class="lni lni-delivery"></i>
+                </div>
+                <div class="media-body">
+                    <h5>Miễn phí giao hàng</h5>
+                    <span>Đơn chỉ từ 99.000 Đ</span>
+                </div>
+            </li>
+            <!-- Money Return -->
+            <li>
+                <div class="media-icon">
+                    <i class="lni lni-support"></i>
+                </div>
+                <div class="media-body">
+                    <h5>Chăm sóc khách hàng 24/7</h5>
+                    <span>Nhắn tin hoặc gọi điện.</span>
+                </div>
+            </li>
+            <!-- Support 24/7 -->
+            <li>
+                <div class="media-icon">
+                    <i class="lni lni-credit-cards"></i>
+                </div>
+                <div class="media-body">
+                    <h5>Thanh toán Online.</h5>
+                    <span>Dịch vụ thanh toán an toàn.</span>
+                </div>
+            </li>
+            <!-- Safe Payment -->
+            <li>
+                <div class="media-icon">
+                    <i class="lni lni-reload"></i>
+                </div>
+                <div class="media-body">
+                    <h5>Đổi trả dễ dàng.</h5>
+                    <span>Mua sắm thả ga.</span>
+                </div>
+            </li>
+        </ul>
+    </div>
+</section>
+<!-- End Shipping Info -->
+<!-- <!-- Brands -->
+<section class="brand-slider section">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <div class="section-title text-center">
+                    <h2>Thương Hiệu Nổi Bật 🌿</h2>
+                    <p>Các thương hiệu mỹ phẩm được khách hàng tin tưởng nhất</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TH -->
+        <div class="brand-carousel owl-carousel">
+            <div class="single-brand">
+                <img src="~/images/brands/3CE.jpg" alt="Innisfree" />
+            </div>
+            <div class="single-brand">
+                <img src="~/images/brands/Innisfree.jpg" alt="L'Oreal Paris" />
+            </div>
+            <div class="single-brand">
+                <img src="~/images/brands/L''Oreal.jpg" alt="Klairs" />
+            </div>
+            <div class="single-brand">
+                <img src="~/images/brands/senka.jpg" alt="Welaya" />
+            </div>
+            <div class="single-brand">
+                <img src="~/images/brands/Simple.jpg" alt="Cocoon" />
+            </div>
+            <div class="single-brand">
+                <img src="~/images/brands/logo.jpg" alt="The Face Shop" />
+            </div>
+        </div>
+    </div>
+</section>
+<!-- End Brands -->

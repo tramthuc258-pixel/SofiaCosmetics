@@ -1,0 +1,51 @@
+﻿@model SofiaCosmetics.Models.TINTUC
+@using System.Web
+
+@{
+    ViewBag.Title = Model.TenTrang;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    string rawHtml = HttpUtility.HtmlDecode(Model.NoiDung ?? "");
+    bool looksLikeHtml = rawHtml.Contains("<");
+    string content = looksLikeHtml
+        ? rawHtml
+        : (rawHtml ?? "").Replace("\r\n", "\n").Replace("\r", "\n").Trim().Replace("\n", "<br/>");
+}
+
+<div class="sf-static container">
+    <h2 class="sf-static__title">@Model.TenTrang</h2>
+    <div class="sf-static__line"></div>
+
+    <div class="sf-pagecontent">
+        @Html.Raw(content)
+    </div>
+</div>
+
+<style>
+    .sf-static {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 16px 0 40px;
+    }
+
+    .sf-static__title {
+        font-size: 30px;
+        font-weight: 800;
+        color: #222;
+        margin-bottom: 8px;
+    }
+
+    .sf-static__line {
+        width: 90px;
+        height: 2px;
+        background: #f3a6b6;
+        border-radius: 999px;
+        margin-bottom: 22px;
+    }
+
+    .sf-pagecontent {
+        font-size: 15px;
+        line-height: 1.8;
+        color: #333;
+    }
+</style>

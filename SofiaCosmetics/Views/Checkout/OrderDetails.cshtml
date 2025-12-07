@@ -1,0 +1,116 @@
+﻿@model SofiaCosmetics.Models.DONHANG
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var tongTien = Model.TongTien ?? 0m;
+
+    var ngayDat = Model.NgayDat ?? DateTime.Now;
+    var diff = DateTime.Now - ngayDat;
+
+    bool choXacNhan = Model.TrangThai == "Chờ xác nhận";
+    bool daThanhToan = Model.TrangThai == "Đã thanh toán";
+    bool daHuy = Model.TrangThai == "Đã hủy";
+
+    bool allowCancel = choXacNhan && diff.TotalHours <= 12;
+
+    var thanhToan = Model.THANHTOANs.FirstOrDefault();
+}
+
+<div class="container mt-4">
+    <h2 class="mb-3">Chi tiết đơn hàng #@Model.MaDH</h2>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+
+    <div class="row">
+        <div class="col-md-8">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Sản phẩm</th>
+                        <th>Biến thể</th>
+                        <th>Số lượng</th>
+                        <th>Đơn giá</th>
+                        <th>Thành tiền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var sp in Model.CHITIETDONHANGs)
+                    {
+                        decimal donGia = Convert.ToDecimal(sp.DonGia);
+                        int soLuong = Convert.ToInt32(sp.SoLuong);
+                        decimal thanhTienSP = donGia * soLuong;
+
+                        <tr>
+                            <td>@sp.CHITIET_SANPHAM.SANPHAM.TenSP</td>
+                            <td>@sp.CHITIET_SANPHAM.TenBienThe</td>
+                            <td>@soLuong</td>
+                            <td>@donGia.ToString("N0") đ</td>
+                            <td>@thanhTienSP.ToString("N0") đ</td>
+                        </tr>
+                    }
+
+                </tbody>
+            </table>
+
+            <div class="mt-3">
+                <a href="/Home" class="btn btn-secondary">Quay lại trang chủ</a>
+
+                @if (allowCancel)
+                {
+                    <a href="@Url.Action("CancelOrder", "Checkout", new { id = Model.MaDH })"
+                       class="btn btn-danger ms-2"
+                       onclick="return confirm('Bạn chắc chắn muốn hủy đơn hàng?');">
+                        Hủy đơn hàng
+                    </a>
+                    <span class="text-muted ms-2">
+                        (Có thể hủy trong 12 giờ sau khi đặt)
+                    </span>
+                }
+                else if (daHuy)
+                {
+                    <span class="badge bg-danger ms-2">Đơn hàng đã hủy</span>
+                }
+                else if (daThanhToan)
+                {
+                    <span class="badge bg-success ms-2">Đã thanh toán</span>
+                }
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card mb-3">
+                <div class="card-header">
+                    Thông tin đơn hàng
+                </div>
+                <div class="card-body">
+                    <p><strong>Ngày đặt:</strong> @ngayDat.ToString("dd/MM/yyyy HH:mm")</p>
+                    <p><strong>Trạng thái:</strong> @Model.TrangThai</p>
+                    <p><strong>Khách hàng:</strong> @Model.KHACHHANG.HoTen</p>
+                    <p><strong>SĐT:</strong> @Model.KHACHHANG.SDT</p>
+                    <p><strong>Địa chỉ:</strong> @Model.KHACHHANG.DiaChi</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    Thanh toán
+                </div>
+                <div class="card-body">
+                    <p><strong>Phương thức:</strong> @(thanhToan?.PhuongThuc ?? "Không rõ")</p>
+                    <p><strong>Trạng thái:</strong> @(thanhToan?.TrangThai ?? "Chưa thanh toán")</p>
+                    <hr />
+                    <h5 class="text-end">
+                        Tổng tiền: <span class="text-danger">@tongTien.ToString("N0") đ</span>
+                    </h5>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

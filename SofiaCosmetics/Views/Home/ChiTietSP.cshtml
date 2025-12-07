@@ -1,0 +1,554 @@
+﻿@model SofiaCosmetics.Models.ViewModels.SanPhamViewModel
+@{
+    ViewBag.Title = "Chi tiết sản phẩm";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var bienThe = ViewBag.BienThe as List<SofiaCosmetics.Models.ViewModels.SanPhamViewModel>;
+    var hinhAnhs = ViewBag.HinhAnhs as List<string>;
+}
+
+<style>
+    /* ---------------- BUTTONS ---------------- */
+    .btn-pink {
+        background-color: #ff91a4;
+        color: white;
+        border: none;
+        transition: 0.3s;
+    }
+
+        .btn-pink:hover {
+            background-color: #ffb6c1;
+        }
+
+    .btn-outline-pink {
+        border: 2px solid #ff91a4;
+        color: #ff91a4;
+        transition: 0.3s;
+    }
+
+        .btn-outline-pink:hover {
+            background: #ff91a4;
+            color: #fff;
+        }
+
+    /* ---------------- VARIANTS ---------------- */
+    .variant-thumb {
+        width: 80px;
+        height: 80px;
+        border-radius: 8px;
+        border: 2px solid transparent;
+        cursor: pointer;
+        object-fit: cover;
+    }
+
+        .variant-thumb.active {
+            border-color: #ff91a4;
+        }
+
+    /* EFFECT khi chưa chọn */
+    .variant-error {
+        border-color: red !important;
+        animation: shake .25s linear 2;
+    }
+
+    @@keyframes shake {
+        0% {
+            transform: translateX(0);
+        }
+
+        25% {
+            transform: translateX(-3px);
+        }
+
+        50% {
+            transform: translateX(3px);
+        }
+
+        75% {
+            transform: translateX(-3px);
+        }
+
+        100% {
+            transform: translateX(0);
+        }
+    }
+
+
+    /* ---------------- QUANTITY ---------------- */
+    .quantity-box {
+        border: 2px solid #ff91a4;
+        border-radius: 8px;
+        display: flex;
+        overflow: hidden;
+    }
+
+    .qty-btn {
+        width: 38px;
+        height: 38px;
+        background: #ffe6ec;
+        font-size: 22px;
+        color: #ff5c77;
+        cursor: pointer;
+        border: none;
+    }
+
+        .qty-btn:hover {
+            background: #ff91a4;
+            color: white;
+        }
+
+    .qty-input {
+        width: 55px;
+        border: none;
+        text-align: center;
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+    /* Tồn kho */
+    .stock-line {
+        margin-top: 7px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #444;
+    }
+
+        .stock-line span {
+            color: #ff5c77;
+            font-weight: 700;
+        }
+
+    /* ---------------- TABS ---------------- */
+    .nav-tabs .nav-link {
+        color: #ff6f91 !important;
+        font-weight: 500;
+    }
+
+        .nav-tabs .nav-link.active {
+            background: #ff6f91 !important;
+            color: #fff !important;
+            border-color: #ff6f91 #ff6f91 #fff !important;
+        }
+
+    /* ---------------- REVIEW ---------------- */
+    .review-item {
+        border-left: 4px solid #ff91a4;
+        background: #fff9fc;
+        padding: 12px 15px;
+        border-radius: 6px;
+        margin-bottom: 12px;
+    }
+
+    #ratingSummary {
+        border: 1px solid #ffe1ea;
+        background: #fff6f9;
+        padding: 18px;
+        border-radius: 8px;
+    }
+
+    .summary-score-line {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 700;
+    }
+
+        .summary-score-line span {
+            font-size: 40px;
+            color: #ff5c77;
+        }
+
+    .rating-box {
+        display: flex;
+        gap: 4px;
+        cursor: pointer;
+        font-size: 28px;
+        color: #ccc;
+    }
+
+    .tab-content {
+        background: #fff6fa;
+        border: 2px solid #ff6f91;
+        border-radius: 12px;
+        padding: 25px;
+        margin-top: -1px;
+    }
+
+    .rating-box .star.selected,
+    .rating-box .star.hover {
+        color: #ff91a4;
+    }
+
+    .review-login a {
+        color: #ff2d68 !important;
+        font-weight: 700;
+    }
+</style>
+
+<!-- ------------------- MAIN LAYOUT ------------------- -->
+<div class="container py-4">
+
+    <div class="row">
+
+        <!-- IMAGE -->
+        <div class="col-md-6 text-center">
+            <img id="mainImage"
+                 src="@Url.Content(hinhAnhs?.FirstOrDefault() ?? "~/images/products/no-image.png")"
+                 class="img-fluid rounded shadow-sm"
+                 style="max-height:450px; object-fit:cover;" />
+        </div>
+
+        <!-- INFO -->
+        <div class="col-md-6">
+
+            <h2 class="fw-bold">@Model.TenSP</h2>
+
+            <p class="text-muted fs-6">
+                <i class="lni lni-tag"></i> @ViewBag.TenDanhMuc
+                <span class="mx-2">|</span>
+                <i class="lni lni-certificate"></i> @ViewBag.TenThuongHieu
+            </p>
+
+            <!-- PRICE -->
+            <h4 class="fw-bold text-danger" id="priceDisplay">
+                @if (Model.GiaKhuyenMai != null)
+                {
+                    @String.Format("{0:N0}₫", Model.GiaKhuyenMai)
+                    <span class="text-muted text-decoration-line-through fs-6 ms-2">
+                        @String.Format("{0:N0}₫", Model.Gia)
+                    </span>
+                }
+                else
+                { @String.Format("{0:N0}₫", Model.Gia)}
+            </h4>
+
+            <!-- VARIANTS -->
+            <label class="fw-semibold mt-3">Biến thể:</label>
+            <div id="variantContainer" class="d-flex gap-4 flex-wrap mt-2">
+                @foreach (var bt in bienThe)
+                {
+                    <div class="text-center">
+                        <img src="@Url.Content(bt.HinhAnh ?? "~/images/products/no-image.png")"
+                             class="variant-thumb"
+                             data-id="@bt.MaCTSP"
+                             data-img="@Url.Content(bt.HinhAnh)"
+                             data-gia="@((int)(bt.Gia ?? 0))"
+                             data-sale="@((int)(bt.GiaKhuyenMai ?? 0))"
+                             data-ton="@bt.SoLuongTon" />
+
+                        <!-- FIX CHÍNH TẠI ĐÂY -->
+                        <div class="small text-muted mt-1">@bt.TenBienThe</div>
+                    </div>
+                }
+            </div>
+
+            <div id="stockInfo" class="stock-line d-none">
+                Tồn kho: <span id="tonKho">0</span> sản phẩm
+            </div>
+
+            <!-- QUANTITY -->
+            <div class="mt-4 d-flex align-items-center gap-3">
+                <label class="fw-semibold">Số lượng:</label>
+                <div class="quantity-box">
+                    <button type="button" class="qty-btn minus">−</button>
+                    <input type="number" id="soLuong" value="1" min="1" class="qty-input" />
+                    <button type="button" class="qty-btn plus">+</button>
+                </div>
+            </div>
+
+            <!-- BUTTONS -->
+            <div class="mt-4 d-flex gap-3">
+                <button id="btnAddCart" class="btn btn-pink px-4 py-2 rounded-pill fw-semibold">
+                    <i class="lni lni-cart"></i> Thêm vào giỏ
+                </button>
+
+                <button id="btnFavorite"
+                        class="btn btn-outline-pink px-4 py-2 rounded-pill fw-semibold"
+                        data-masp="@Model.MaSP">
+                    <i id="favIcon" class="lni lni-heart"></i> Yêu thích
+                </button>
+            </div>
+
+            <input type="hidden" id="selectedVariantId" value="" />
+
+        </div>
+    </div>
+
+    <!-- ------------------- TABS ------------------- -->
+    <ul class="nav nav-tabs mt-5">
+        <li class="nav-item">
+            <a class="nav-link active fw-bold" data-bs-toggle="tab" href="#tabDetail">Chi tiết</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link fw-bold" data-bs-toggle="tab" href="#tabReview">Đánh giá</a>
+        </li>
+    </ul>
+
+    <div class="tab-content p-4 border rounded-bottom shadow-sm">
+
+        <!-- DETAIL -->
+        <div class="tab-pane fade show active" id="tabDetail">
+            <div class="product-description mt-3">
+                <h5 class="fw-bold text-pink mb-3">Mô tả sản phẩm</h5>
+                @Html.Raw(ViewBag.MoTa?.Replace("\n", "<br/>"))
+            </div>
+        </div>
+
+        <!-- REVIEW -->
+        <div class="tab-pane fade" id="tabReview">
+
+            <h5 class="fw-bold mt-3">Đánh giá sản phẩm</h5>
+
+            <div id="ratingSummary">
+                <div class="summary-score-line">
+                    <span id="avgScore">0.0</span>
+                    <span>/ 5.0</span>
+                </div>
+                <div id="reviewCount" class="small text-muted">(0 đánh giá)</div>
+            </div>
+
+            @if (Session["MaKH"] == null)
+            {
+                <p class="review-login">Bạn phải <a href="/User/Login">đăng nhập</a> để đánh giá.</p>
+            }
+            else
+            {
+                <h6 class="fw-bold mt-4">Gửi đánh giá</h6>
+
+                <div id="ratingBox" class="rating-box mb-2">
+                    <span class="star" data-value="1">★</span>
+                    <span class="star" data-value="2">★</span>
+                    <span class="star" data-value="3">★</span>
+                    <span class="star" data-value="4">★</span>
+                    <span class="star" data-value="5">★</span>
+                </div>
+
+                <input type="hidden" id="soSao" value="5" />
+
+                <textarea id="noiDung" class="form-control mb-2"
+                          placeholder="Nhập nội dung đánh giá..."></textarea>
+
+                <button id="btnGuiDanhGia" class="btn btn-pink rounded-pill px-4">
+                    Gửi đánh giá
+                </button>
+            }
+
+            <hr />
+            <div id="reviewList"></div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+@section scripts {
+
+    <script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    /* ---------------- VARIANT CLICK ---------------- */
+    let selectedTon = 0;
+
+    $(".variant-thumb").click(function () {
+
+        $(".variant-thumb").removeClass("active");
+        $(this).addClass("active");
+
+        $("#selectedVariantId").val($(this).data("id"));
+        $("#mainImage").attr("src", $(this).data("img"));
+
+        let goc = $(this).data("gia");
+        let sale = $(this).data("sale");
+        selectedTon = $(this).data("ton");
+
+        $("#stockInfo").removeClass("d-none");
+        $("#tonKho").text(selectedTon);
+
+        if (sale > 0 && sale < goc)
+            $("#priceDisplay").html(
+                sale.toLocaleString("vi-VN") + "₫" +
+                `<span class="text-muted text-decoration-line-through ms-2">
+                ${goc.toLocaleString("vi-VN")}₫</span>`
+            );
+        else
+            $("#priceDisplay").text(goc.toLocaleString("vi-VN") + "₫");
+    });
+
+
+    /* ---------------- QUANTITY (+/-) ---------------- */
+    $(".qty-btn.plus").click(function () {
+        let sl = parseInt($("#soLuong").val());
+        $("#soLuong").val(sl + 1);
+    });
+
+    $(".qty-btn.minus").click(function () {
+        let sl = parseInt($("#soLuong").val());
+        if (sl > 1) $("#soLuong").val(sl - 1);
+    });
+
+
+    /* ---------------- ADD TO CART ---------------- */
+    $("#btnAddCart").click(function () {
+
+        let maCTSP = $("#selectedVariantId").val();
+        let soLuong = parseInt($("#soLuong").val() || 1);
+
+        if (!maCTSP) {
+            $("#variantContainer").addClass("variant-error");
+            setTimeout(() => $("#variantContainer").removeClass("variant-error"), 800);
+            toastr.error("Vui lòng chọn biến thể!");
+            return;
+        }
+
+        if (soLuong > selectedTon) {
+            toastr.error(`Chỉ còn ${selectedTon} sản phẩm trong kho!`);
+            return;
+        }
+
+        $.post("/Cart/ThemVaoGio",
+            { maCTSP: maCTSP, soLuong: soLuong },
+            function (res) {
+                if (res.success) {
+                    toastr.success(`Đã thêm ${soLuong} sản phẩm vào giỏ!`);
+                    $(".cart-count").text(res.count);
+                } else {
+                    toastr.error(res.message);
+                }
+            }
+        ).fail(() => {
+            toastr.error("Có lỗi xảy ra khi thêm sản phẩm!");
+        });
+
+    });
+
+
+    /* ---------------- ADD TO FAVORITE ---------------- */
+    $("#btnFavorite").click(function () {
+
+        var masp = $(this).data("masp");
+
+        $.ajax({
+            url: "/Wishlist/ThemYeuThich",
+            type: "GET",
+            data: { id: masp },
+            success: function (res) {
+                if (res.success) {
+                    toastr.success("Đã thêm vào danh sách yêu thích 💖");
+
+                    $(".wishlist-count").text(res.count);
+
+                    $("#btnFavorite").removeClass("btn-outline-pink")
+                        .addClass("btn-pink");
+                    $("#favIcon").removeClass("lni-heart")
+                        .addClass("lni-heart-filled");
+                } else {
+                    toastr.warning(res.message);
+                }
+            },
+            error: function () {
+                toastr.error("Không thể thêm vào yêu thích!");
+            }
+        });
+    });
+
+
+
+    /* ---------------- ⭐ RATING STAR (hover + click) ⭐ ---------------- */
+    let currentRating = 5; // mặc định 5 sao
+
+    $("#ratingBox .star").on("mouseover", function () {
+        let val = $(this).data("value");
+        $("#ratingBox .star").each(function () {
+            $(this).toggleClass("hover", $(this).data("value") <= val);
+        });
+    });
+
+    $("#ratingBox .star").on("mouseout", function () {
+        $("#ratingBox .star").removeClass("hover");
+    });
+
+    $("#ratingBox .star").on("click", function () {
+        currentRating = $(this).data("value");
+        $("#soSao").val(currentRating);
+
+        $("#ratingBox .star").each(function () {
+            $(this).toggleClass("selected", $(this).data("value") <= currentRating);
+        });
+    });
+
+
+
+    /* ---------------- LOAD + SEND REVIEW ---------------- */
+    function loadReview() {
+        $.get("@Url.Action("LayDanhGia","Home")",
+            { maSP: @Model.MaSP },
+            function (list) {
+
+                $("#reviewList").empty();
+
+                if (!list || list.length === 0) {
+                    $("#reviewList").html("<p class='text-muted'>Chưa có đánh giá nào.</p>");
+                    return;
+                }
+
+                let total = 0;
+
+                list.forEach(dg => {
+                    total += dg.SoSao;
+                    let ngay = new Date(parseInt(dg.NgayDanhGia.replace("/Date(","").replace(")/","")));
+                    let ngayVN = ngay.toLocaleDateString("vi-VN");
+
+                    $("#reviewList").append(`
+                        <div class="review-item">
+                            <div class="fw-bold">${dg.TenKH}</div>
+                            <div class="text-warning">${"★".repeat(dg.SoSao)}</div>
+                            <div>${dg.NoiDung}</div>
+                            <div class="date">${ngayVN}</div>
+                        </div>
+                    `);
+                });
+
+                let avg = (total / list.length).toFixed(1);
+                $("#avgScore").text(avg);
+                $("#reviewCount").text(`(${list.length} đánh giá)`);
+            });
+    }
+
+    loadReview();
+
+
+    $("#btnGuiDanhGia").click(function () {
+
+        let soSao = $("#soSao").val();
+        let noiDung = $("#noiDung").val().trim();
+
+        if (!noiDung) {
+            toastr.warning("Vui lòng nhập nội dung!");
+            return;
+        }
+
+        $.post("@Url.Action("GuiDanhGia","Home")",
+            {
+                maSP: @Model.MaSP,
+                soSao: soSao,
+                noiDung: noiDung
+            },
+            function (res) {
+                if (res.success) {
+                    toastr.success("Đã gửi đánh giá!");
+                    $("#noiDung").val("");
+                    loadReview();
+                } else {
+                    toastr.warning(res.message);
+                }
+            });
+    });
+
+});
+    </script>
+
+
+}

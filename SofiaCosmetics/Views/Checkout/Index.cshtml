@@ -1,0 +1,335 @@
+﻿@model List<SofiaCosmetics.Models.ViewModels.CartItem>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    decimal tongTien = Model.Sum(x => x.ThanhTien);
+}
+
+<style>
+    .checkout-wrapper {
+        max-width: 1200px;
+        margin: auto;
+        padding: 20px;
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .address-card {
+        background: #fffef7;
+        border: 1px solid #f8e6c8;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 25px;
+    }
+
+    .address-title {
+        font-weight: 700;
+        font-size: 20px;
+        margin-bottom: 10px;
+        color: #d36b00;
+    }
+
+    .address-text {
+        font-size: 16px;
+        color: #444;
+    }
+
+    .btn-change {
+        border: 1px solid #ee4d2d;
+        padding: 6px 14px;
+        border-radius: 6px;
+        color: #ee4d2d;
+        background: #fff;
+        font-weight: 600;
+        transition: .2s;
+    }
+
+        .btn-change:hover {
+            background: #fff5f2;
+        }
+
+    .product-row {
+        border-bottom: 1px solid #f0f0f0;
+        padding: 15px 0;
+    }
+
+    .pay-box {
+        padding: 20px;
+        background: #fff8f8;
+        border-radius: 10px;
+        border: 1px solid #ffd6d6;
+        margin-bottom: 20px;
+    }
+
+    .total-box {
+        padding: 15px;
+        background: #fff4f4;
+        border-radius: 10px;
+        font-size: 18px;
+        border: 1px solid #ffd6d6;
+    }
+
+    .btn-order {
+        background: #ee4d2d;
+        color: white;
+        width: 100%;
+        border: none;
+        font-size: 20px;
+        padding: 14px;
+        font-weight: 600;
+        border-radius: 10px;
+        transition: .2s;
+    }
+
+        .btn-order:hover {
+            background: #d94426;
+        }
+
+    .modal-content {
+        border-radius: 12px;
+    }
+</style>
+
+
+<div class="checkout-wrapper">
+
+    <!-- ĐỊA CHỈ GIAO HÀNG -->
+    <div class="address-card">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <div class="address-title">
+                    <i class="bi bi-geo-alt-fill"></i> Địa chỉ nhận hàng
+                </div>
+
+                <div class="address-text">
+                    <b id="spanName">@ViewBag.HoTen</b> |
+                    <span id="spanPhone">@ViewBag.SDT</span>
+                    <br />
+                    <span id="spanAddress">@ViewBag.DiaChi</span>
+                </div>
+            </div>
+
+            <button type="button"
+                    class="btn-change"
+                    data-bs-toggle="modal"
+                    data-bs-target="#DiaChiModal">
+                Thay đổi
+            </button>
+        </div>
+    </div>
+
+
+    <!-- SẢN PHẨM -->
+    <div class="checkout-card">
+        <h5> Sản phẩm</h5>
+
+        @foreach (var item in Model)
+        {
+            <div class="product-row d-flex justify-content-between align-items-center">
+
+                <div class="d-flex align-items-center">
+                    <img src="@item.HinhAnh" width="60" class="rounded me-3" />
+                    <div>
+                        <b>@item.TenSP</b><br />
+                        <small class="text-muted">@item.TenBienThe</small>
+                    </div>
+                </div>
+
+                <div class="text-end">
+                    <div class="text-danger fw-bold">@item.Gia.ToString("N0") đ</div>
+                    <small>x @item.SoLuong</small>
+                </div>
+
+            </div>
+        }
+    </div>
+
+
+    <!-- BẮT ĐẦU FORM -->
+    <form method="post" action="/Checkout/DatHang" onsubmit="return ValidateCheckout()">
+
+        <!-- PHƯƠNG THỨC THANH TOÁN -->
+        <div class="pay-box">
+            <h5>💳 Phương thức thanh toán</h5>
+
+            <label><input type="radio" name="phuongthuc" value="COD" checked /> Thanh toán khi nhận hàng</label><br />
+            <label><input type="radio" name="phuongthuc" value="VNPAY" /> Ví VNPay </label><br />
+            @*<label><input type="radio" name="phuongthuc" value="MOMO" /> Ví MoMo</label><br />*@
+        </div>
+
+        <!-- TỔNG TIỀN -->
+        <div class="total-box mb-3">
+            <div class="d-flex justify-content-between">
+                <span>Tổng cộng:</span>
+                <span class="text-danger fw-bold">@tongTien.ToString("N0") đ</span>
+            </div>
+        </div>
+
+        <!-- HIDDEN GỬI LÊN SERVER -->
+        <input type="hidden" id="HoTen" name="HoTen" value="@ViewBag.HoTen" />
+        <input type="hidden" id="SDT" name="SDT" value="@ViewBag.SDT" />
+        <input type="hidden" id="Email" name="Email" value="@ViewBag.Email" />
+        <input type="hidden" id="DiaChi" name="DiaChi" value="@ViewBag.DiaChi" />
+
+        <button class="btn-order" type="submit">ĐẶT HÀNG</button>
+    </form>
+
+</div>
+
+
+<!-- POPUP CẬP NHẬT ĐỊA CHỈ -->
+<div class="modal fade" id="DiaChiModal">
+    <div class="modal-dialog">
+        <div class="modal-content p-3">
+
+            <h5 class="fw-bold mb-3">Cập nhật địa chỉ giao hàng</h5>
+
+            <label class="mb-1">Họ và tên</label>
+            <input id="nameModal" class="form-control mb-2" value="@ViewBag.HoTen" />
+
+            <label class="mb-1">Số điện thoại</label>
+            <input id="phoneModal" class="form-control mb-2" value="@ViewBag.SDT" />
+
+            <label class="mb-1">Tỉnh / Thành phố</label>
+            <select id="province" class="form-control mb-2"></select>
+
+            <label class="mb-1">Quận / Huyện</label>
+            <select id="district" class="form-control mb-2"></select>
+
+            <label class="mb-1">Phường / Xã</label>
+            <select id="ward" class="form-control mb-2"></select>
+
+            <label class="mb-1">Địa chỉ cụ thể</label>
+            <input id="detail" class="form-control mb-3" placeholder="Số nhà, tên đường..." />
+
+            <button type="button" class="btn btn-primary w-100" onclick="SaveAddress()">Lưu thông tin</button>
+
+        </div>
+    </div>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // Lấy các element trước
+    const province = document.getElementById("province");
+    const district = document.getElementById("district");
+    const ward = document.getElementById("ward");
+
+    // ⭐ Load TỈNH
+    fetch("https://provinces.open-api.vn/api/?depth=1")
+        .then(r => r.json())
+        .then(data => {
+            province.innerHTML = '<option value="">-- Chọn tỉnh/thành --</option>';
+            data.forEach(p => {
+                province.innerHTML += `<option value="${p.code}">${p.name}</option>`;
+            });
+        });
+
+    // ⭐ Khi đổi TỈNH -> load HUYỆN
+    province.onchange = () => {
+        if (!province.value) {
+            district.innerHTML = '<option value="">-- Chọn quận/huyện --</option>';
+            ward.innerHTML = '<option value="">-- Chọn phường/xã --</option>';
+            return;
+        }
+
+        fetch(`https://provinces.open-api.vn/api/p/${province.value}?depth=2`)
+            .then(r => r.json())
+            .then(data => {
+                district.innerHTML = '<option value="">-- Chọn quận/huyện --</option>';
+                ward.innerHTML = '<option value="">-- Chọn phường/xã --</option>';
+                data.districts.forEach(d => {
+                    district.innerHTML += `<option value="${d.code}">${d.name}</option>`;
+                });
+            });
+    };
+
+    // ⭐ Khi đổi HUYỆN -> load XÃ
+    district.onchange = () => {
+        if (!district.value) {
+            ward.innerHTML = '<option value="">-- Chọn phường/xã --</option>';
+            return;
+        }
+
+        fetch(`https://provinces.open-api.vn/api/d/${district.value}?depth=2`)
+            .then(r => r.json())
+            .then(data => {
+                ward.innerHTML = '<option value="">-- Chọn phường/xã --</option>';
+                data.wards.forEach(w => {
+                    ward.innerHTML += `<option value="${w.code}">${w.name}</option>`;
+                });
+            });
+    };
+
+    // ⭐ Lưu địa chỉ & đóng modal (kèm fallback xoá backdrop)
+    function SaveAddress() {
+        let name = document.getElementById("nameModal").value.trim();
+        let phone = document.getElementById("phoneModal").value.trim();
+        let detail = document.getElementById("detail").value.trim();
+
+        if (!name || !phone) {
+            alert("Vui lòng nhập họ tên và số điện thoại");
+            return;
+        }
+
+        if (!province.value || !district.value || !ward.value || !detail) {
+            alert("Vui lòng chọn đầy đủ tỉnh / huyện / xã và nhập địa chỉ cụ thể");
+            return;
+        }
+
+        let pText = province.options[province.selectedIndex].text;
+        let dText = district.options[district.selectedIndex].text;
+        let wText = ward.options[ward.selectedIndex].text;
+
+        let full = `${detail}, ${wText}, ${dText}, ${pText}`;
+
+        // Cập nhật hidden để gửi lên controller
+        document.getElementById("HoTen").value = name;
+        document.getElementById("SDT").value = phone;
+        document.getElementById("DiaChi").value = full;
+
+        // Cập nhật UI
+        document.getElementById("spanName").innerText = name;
+        document.getElementById("spanPhone").innerText = phone;
+        document.getElementById("spanAddress").innerText = full;
+
+        // Đóng modal an toàn
+        const modalEl = document.getElementById("DiaChiModal");
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+
+        // Fallback: nếu vì lý do nào đó backdrop vẫn còn thì xoá luôn
+        document.querySelectorAll('.modal-backdrop').forEach(e => e.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+    }
+    function ValidateCheckout() {
+
+        let name = document.getElementById("HoTen").value.trim();
+        let phone = document.getElementById("SDT").value.trim();
+        let address = document.getElementById("DiaChi").value.trim();
+
+        if (name.length === 0) {
+            alert("⚠ Vui lòng nhập họ tên người nhận hàng!");
+            return false;
+        }
+
+        if (phone.length === 0) {
+            alert("⚠ Vui lòng nhập số điện thoại!");
+            return false;
+        }
+
+        if (!/^[0-9]{9,11}$/.test(phone)) {
+            alert("⚠ Số điện thoại không hợp lệ! Chỉ gồm 9–11 số.");
+            return false;
+        }
+
+        if (address.length === 0) {
+            alert("⚠ Vui lòng chọn địa chỉ giao hàng!");
+            return false;
+        }
+
+        return true; // hợp lệ → cho submit
+    }
+</script>

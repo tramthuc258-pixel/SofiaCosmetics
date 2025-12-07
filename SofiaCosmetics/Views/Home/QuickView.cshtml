@@ -1,0 +1,227 @@
+﻿@model SofiaCosmetics.Models.ViewModels.SanPhamViewModel
+@{
+    var bienThe = ViewBag.BienThe as List<SofiaCosmetics.Models.ViewModels.SanPhamViewModel>;
+}
+
+<style>
+    .quickview-wrapper {
+        padding: 20px;
+        background: #fff;
+        border-radius: 14px;
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    .quick-title {
+        font-size: 22px;
+        font-weight: 700;
+        margin-bottom: 12px;
+        color: #222;
+    }
+
+    .quick-price {
+        font-size: 24px;
+        font-weight: 700;
+        color: #ff4d6d;
+    }
+
+    .quick-old-price {
+        font-size: 14px;
+        color: #999;
+        text-decoration: line-through;
+        margin-left: 8px;
+    }
+
+    .quick-img {
+        width: 100%;
+        max-height: 300px;
+        border-radius: 10px;
+        object-fit: cover;
+        pointer-events: none;
+        user-select: none;
+    }
+
+    .btn-pink {
+        background: #ff91a4;
+        color: white;
+        border: none;
+        transition: .25s;
+        font-weight: 600;
+    }
+
+        .btn-pink:hover {
+            background: #ffb6c1;
+        }
+
+    .btn-outline-pink {
+        border: 2px solid #ff91a4;
+        color: #ff91a4;
+        transition: .25s;
+    }
+
+        .btn-outline-pink:hover {
+            background: #ff91a4;
+            color: white;
+        }
+
+    .variant-thumb {
+        width: 65px;
+        height: 65px;
+        border-radius: 8px;
+        object-fit: cover;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: .25s;
+    }
+
+        .variant-thumb.active {
+            border-color: #ff91a4;
+        }
+
+    .variant-name {
+        margin-top: 4px;
+        font-size: 13px;
+        color: #666;
+    }
+
+    .quickview-link {
+        font-weight: 700;
+        color: #ff6f91;
+        text-decoration: none;
+        display: inline-flex;
+        gap: 5px;
+        margin-top: 10px;
+    }
+
+        .quickview-link:hover {
+            color: #ff3d6f;
+        }
+</style>
+
+<div class="quickview-wrapper">
+
+    <h4 class="quick-title">@Model.TenSP</h4>
+
+    <div class="row">
+
+        <div class="col-md-5">
+            <img src="@Url.Content(Model.HinhAnh)" class="quick-img shadow-sm" />
+        </div>
+
+        <div class="col-md-7">
+
+            <div class="mb-2">
+                <span class="quick-price">@String.Format("{0:N0}₫", Model.GiaKhuyenMai ?? Model.Gia)</span>
+
+                @if (Model.GiaKhuyenMai != null)
+                {
+                    <span class="quick-old-price">@String.Format("{0:N0}₫", Model.Gia)</span>
+                }
+            </div>
+
+            <p class="quick-short-desc">@ViewBag.MoTaNgan</p>
+
+            <label class="fw-semibold">Chọn biến thể:</label>
+
+            <div id="variantContainerQuick" class="d-flex gap-3 mt-2 flex-wrap">
+                @foreach (var bt in bienThe)
+                {
+                    <div class="text-center">
+                        <img src="@Url.Content(bt.HinhAnh)"
+                             class="variant-thumb"
+                             data-id="@bt.MaCTSP"
+                             data-img="@Url.Content(bt.HinhAnh)"
+                             data-ton="@bt.SoLuongTon" />
+                        <div class="variant-name">@bt.TenBienThe</div>
+                    </div>
+                }
+            </div>
+
+            <div id="stockInfoQuick" class="mt-2 text-secondary d-none">
+                Tồn kho: <b id="tonKhoQuick">0</b> sản phẩm
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button class="btn btn-pink px-4 py-2 rounded-pill quickAddCart" data-mactsp="">
+                    <i class="lni lni-cart"></i> Thêm vào giỏ
+                </button>
+
+                <button class="btn btn-outline-pink px-4 py-2 rounded-pill quickAddWish"
+                        data-id="@Model.MaSP">
+                    <i class="lni lni-heart"></i> Yêu thích
+                </button>
+            </div>
+
+            <a href="/Home/ChiTietSP/@Model.MaSP" class="quickview-link">
+                Xem chi tiết sản phẩm <i class="lni lni-arrow-right"></i>
+            </a>
+
+        </div>
+    </div>
+</div>
+
+<script>
+
+    // ================== CHỌN BIẾN THỂ ==================
+    let tonQuick = 0;
+
+    $(document).on("click", ".variant-thumb", function () {
+
+        $(".variant-thumb").removeClass("active");
+        $(this).addClass("active");
+
+        $(".quick-img").attr("src", $(this).data("img"));
+        $(".quickAddCart").attr("data-mactsp", $(this).data("id"));
+
+        tonQuick = $(this).data("ton");
+
+        $("#stockInfoQuick").removeClass("d-none");
+        $("#tonKhoQuick").text(tonQuick);
+    });
+
+    // ================== THÊM GIỎ HÀNG ==================
+    $(document).on("click", ".quickAddCart", function () {
+        let id = $(this).data("mactsp");
+
+        if (!id) return toastr.error("Vui lòng chọn biến thể!");
+
+        $.post("/Cart/ThemVaoGio", { maCTSP: id, soLuong: 1 }, function (res) {
+
+            if (res.success) {
+                toastr.success("Đã thêm vào giỏ hàng!");
+                $(".cart-count").text(res.count);
+            } else {
+                toastr.error(res.message);
+            }
+        });
+    });
+
+    // ================== THÊM YÊU THÍCH ==================
+    $(document).on("click", ".quickAddWish", function () {
+
+        let productId = $(this).data("id");
+        let btn = $(this);
+
+        $.get("/Wishlist/ThemYeuThich", { id: productId }, function (res) {
+
+            if (res.success) {
+
+                toastr.success("Đã thêm vào danh sách yêu thích 💖");
+
+                // cập nhật số lượng wishlist trên navbar
+                $(".wishlist-count").text(res.count);
+
+                // đổi icon
+                btn.find("i").removeClass("lni-heart").addClass("lni-heart-filled");
+
+                // đổi style nút
+                btn.removeClass("btn-outline-pink").addClass("btn-pink");
+
+            } else {
+                toastr.warning(res.message);
+            }
+
+        }).fail(() => toastr.error("Lỗi kết nối máy chủ!"));
+    });
+
+</script>
+

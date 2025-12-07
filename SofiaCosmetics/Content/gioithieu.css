@@ -1,0 +1,444 @@
+﻿/* ================= RESET chống CSS global ================= */
+.sf-static, .sf-static * {
+	box-sizing: border-box;
+}
+
+	.sf-static img {
+		max-width: 100% !important;
+		height: auto !important;
+		display: block !important;
+	}
+
+	.sf-static p, .sf-static h1, .sf-static h2, .sf-static h3, .sf-static ul {
+		margin: 0;
+		padding: 0;
+	}
+
+/* ================= KHUNG CHUNG ================= */
+.sf-static {
+	max-width: 1100px;
+	margin: 0 auto;
+	padding: 16px 0 40px;
+}
+
+.sf-static__title {
+	font-size: 30px;
+	font-weight: 800;
+	color: #222;
+	margin-bottom: 8px;
+}
+
+.sf-static__line {
+	width: 90px;
+	height: 2px;
+	background: #f3a6b6;
+	border-radius: 999px;
+	margin-bottom: 22px;
+}
+
+.sf-section {
+	margin: 36px 0;
+}
+
+.sf-center {
+	text-align: center;
+	font-weight: 800;
+	font-size: 20px;
+	margin: 14px 0 36px;
+	letter-spacing: .6px;
+	line-height: 1.35;
+}
+
+.sf-center--big {
+	font-size: 22px;
+	margin-bottom: 34px;
+}
+
+/* ================= HERO ABOUT ================= */
+.sf-hero {
+	background: #fde7ee;
+	border-radius: 12px;
+	padding: 40px 18px;
+	text-align: center;
+}
+
+.sf-hero__inner {
+	max-width: 760px;
+	margin: 0 auto;
+}
+
+.sf-hero h1 {
+	font-size: 26px;
+	font-weight: 800;
+	margin-bottom: 8px;
+}
+
+.sf-hero p {
+	font-size: 13.5px;
+	letter-spacing: .6px;
+	text-transform: uppercase;
+	color: #333;
+	margin-bottom: 16px;
+}
+
+.sf-hero__btns {
+	display: flex;
+	justify-content: center;
+	gap: 12px;
+	margin-top: 8px;
+}
+
+.sf-btn {
+	padding: 10px 16px;
+	border-radius: 10px;
+	font-weight: 700;
+	font-size: 14px;
+	text-decoration: none;
+	display: inline-block;
+	transition: .2s;
+}
+
+.sf-btn--primary {
+	background: #f08aa4;
+	color: #fff;
+}
+
+.sf-btn--ghost {
+	background: #fff;
+	color: #f08aa4;
+	border: 1.5px solid #f08aa4;
+}
+
+.sf-btn:hover {
+	transform: translateY(-2px);
+	opacity: .95;
+}
+
+/* ================= SOFIA LÀ AI ================= */
+.sf-grid-2 {
+	display: grid;
+	grid-template-columns: 1.1fr .9fr;
+	gap: 28px;
+	align-items: center;
+}
+
+.sf-imgbox img {
+	border-radius: 12px;
+	box-shadow: 0 6px 16px rgba(0,0,0,.08);
+}
+
+.sf-text h2 {
+	font-size: 20px;
+	font-weight: 800;
+	margin-bottom: 10px;
+}
+
+.sf-text p {
+	font-size: 15px;
+	line-height: 1.75;
+	color: #333;
+	margin-bottom: 10px;
+}
+
+/* ================= CAM KẾT ================= */
+.sf-commit {
+	display: grid;
+	grid-template-columns: repeat(5,minmax(0,1fr));
+	gap: 14px;
+	text-align: center;
+	margin-top: 2px;
+}
+
+.sf-card {
+	background: #fff;
+	border: 1px solid #eee;
+	border-radius: 12px;
+	padding: 14px 12px;
+	box-shadow: 0 3px 10px rgba(0,0,0,.04);
+	min-height: 150px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.sf-icon {
+	width: 50px;
+	height: 50px;
+	border-radius: 999px;
+	display: grid;
+	place-items: center;
+	font-size: 20px;
+	color: #f08aa4;
+	background: #fff;
+	border: 2px solid #f08aa4;
+	margin-bottom: 10px;
+	box-shadow: 0 4px 10px rgba(240,138,164,.25);
+}
+
+.sf-card h3 {
+	font-size: 14.2px;
+	font-weight: 800;
+	margin-bottom: 4px;
+}
+
+.sf-card p {
+	font-size: 12.5px;
+	color: #666;
+	line-height: 1.55;
+}
+
+/* ================= WHY ================= */
+.sf-section--why {
+	margin-top: 44px;
+}
+
+.sf-why {
+	display: grid;
+	grid-template-columns: repeat(3,minmax(0,1fr));
+	gap: 18px;
+	margin-top: 2px;
+}
+
+.sf-why-card {
+	padding: 18px 16px;
+	min-height: 130px;
+	text-align: center;
+	border: 1px solid #eee;
+	box-shadow: 0 3px 10px rgba(0,0,0,.04);
+}
+
+.sf-why-icon {
+	width: 44px;
+	height: 44px;
+	border-radius: 999px;
+	display: grid;
+	place-items: center;
+	margin: 0 auto;
+	border: 2px solid #f08aa4;
+	color: #f08aa4;
+	font-size: 18px;
+	background: #fff;
+}
+
+.sf-why-card h3 {
+	font-size: 15.5px;
+	font-weight: 800;
+	margin: 8px 0 6px;
+}
+
+.sf-why-card p {
+	font-size: 13.5px;
+	color: #666;
+	line-height: 1.6;
+}
+
+/* ================= TIMELINE ================= */
+.sf-timeline {
+	display: grid;
+	grid-template-columns: repeat(4,minmax(0,1fr));
+	gap: 18px;
+	margin-top: 4px;
+}
+
+.sf-time {
+	border: 1.5px dashed #f3a6b6;
+	border-radius: 12px;
+	padding: 14px;
+	background: #fff;
+	text-align: center;
+}
+
+	.sf-time span {
+		display: inline-block;
+		background: #f08aa4;
+		color: #fff;
+		padding: 4px 10px;
+		border-radius: 999px;
+		font-weight: 800;
+		font-size: 12px;
+		margin-bottom: 8px;
+	}
+
+	.sf-time p {
+		font-size: 13px;
+		color: #444;
+	}
+
+/* ================= WISH ================= */
+.sf-wish--v2 {
+	display: flex;
+	gap: 18px;
+	align-items: center;
+	padding: 22px 24px;
+	background: #fde7ee;
+	border-radius: 14px;
+}
+
+.sf-wish__left {
+	width: 240px;
+	flex-shrink: 0;
+}
+
+.sf-wish__icon {
+	width: 52px;
+	height: 52px;
+	border-radius: 999px;
+	background: #fff;
+	border: 2px solid #f08aa4;
+	color: #f08aa4;
+	display: grid;
+	place-items: center;
+	font-size: 20px;
+	margin-bottom: 10px;
+	box-shadow: 0 4px 10px rgba(0,0,0,.05);
+}
+
+.sf-wish__title {
+	font-size: 18px;
+	font-weight: 800;
+	margin-bottom: 6px;
+	color: #111;
+}
+
+.sf-wish__sub {
+	font-size: 14px;
+	color: #444;
+	line-height: 1.6;
+}
+
+.sf-wish__divider {
+	width: 1px;
+	align-self: stretch;
+	background: rgba(240,138,164,.45);
+	border-radius: 999px;
+}
+
+.sf-wish__right {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.sf-wish__list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	display: grid;
+	gap: 10px;
+}
+
+	.sf-wish__list li {
+		position: relative;
+		padding-left: 26px;
+		font-size: 15px;
+		color: #333;
+		line-height: 1.7;
+	}
+
+		.sf-wish__list li::before {
+			content: "✓";
+			position: absolute;
+			left: 0;
+			top: 2px;
+			width: 18px;
+			height: 18px;
+			border-radius: 999px;
+			background: #fff;
+			border: 1.8px solid #f08aa4;
+			color: #f08aa4;
+			display: grid;
+			place-items: center;
+			font-weight: 900;
+			font-size: 11px;
+		}
+
+.sf-wish__mapbox {
+	width: 100%;
+	height: 140px;
+	border-radius: 12px;
+	overflow: hidden;
+	border: 1px solid rgba(0,0,0,.06);
+	box-shadow: 0 4px 12px rgba(0,0,0,.06);
+	background: #fff;
+}
+
+	.sf-wish__mapbox iframe {
+		width: 100%;
+		height: 100%;
+		border: 0;
+		display: block;
+	}
+
+.sf-wish__addr {
+	background: #fff;
+	border-radius: 12px;
+	padding: 10px 12px;
+	border: 1px dashed rgba(240,138,164,.8);
+}
+
+	.sf-wish__addr h4 {
+		font-weight: 800;
+		font-size: 14px;
+		margin: 0 0 4px;
+	}
+
+	.sf-wish__addr p {
+		font-size: 13.5px;
+		line-height: 1.6;
+		margin: 0 0 6px;
+		font-weight: 600;
+	}
+
+.sf-wish__maplink {
+	font-size: 13px;
+	font-weight: 800;
+	color: #e96d86;
+	text-decoration: none;
+}
+
+	.sf-wish__maplink:hover {
+		text-decoration: underline;
+	}
+
+/* ================= RESPONSIVE ================= */
+@media (max-width:992px) {
+	.sf-commit {
+		grid-template-columns: repeat(3,1fr);
+	}
+
+	.sf-timeline {
+		grid-template-columns: repeat(2,1fr);
+	}
+
+	.sf-grid-2 {
+		grid-template-columns: 1fr;
+	}
+
+	.sf-why {
+		grid-template-columns: 1fr;
+	}
+}
+
+@media (max-width:600px) {
+	.sf-commit {
+		grid-template-columns: repeat(2,1fr);
+	}
+
+	.sf-wish--v2 {
+		flex-direction: column;
+		text-align: center;
+	}
+
+	.sf-wish__left {
+		width: 100%;
+	}
+
+	.sf-wish__divider {
+		display: none;
+	}
+
+	.sf-wish__list {
+		text-align: left;
+	}
+}

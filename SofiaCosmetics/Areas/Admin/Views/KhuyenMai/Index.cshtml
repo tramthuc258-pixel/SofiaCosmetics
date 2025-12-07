@@ -1,0 +1,399 @@
+﻿@model IEnumerable<SofiaCosmetics.Models.AdminModels.AdminKhuyenMai>
+@section styles{
+    <link href="~/Content/admin-khuyenmai.css" rel="stylesheet" />
+}
+
+@{
+    ViewBag.Title = "Quản lý khuyến mãi";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<div class="top-action-bar">
+    <h2 class="page-title">Quản lý khuyến mãi</h2>
+
+    <div class="search-area">
+        <input type="text" id="searchBox" placeholder="Tìm kiếm khuyến mãi..." value="@ViewBag.Search" />
+        <button class="btn-search" id="btnSearch">
+            <i class="bi bi-search"></i>
+        </button>
+        <a href="/Admin/KhuyenMai" class="btn-reset">
+            <i class="bi bi-arrow-clockwise"></i>
+        </a>
+    </div>
+
+    <div class="action-buttons">
+        <button class="btn-add" onclick="openAddModal()">
+            <i class="bi bi-tags-fill"></i> Thêm khuyến mãi
+        </button>
+    </div>
+</div>
+
+<!-- TABLE CARD -->
+<div class="table-card">
+    <table class="table-main">
+        <thead>
+            <tr>
+                <th style="width:110px;">Mã KM</th>
+                <th>Tên khuyến mãi</th>
+                <th>Mô tả</th>
+                <th style="width:90px;" class="text-center">Giảm (%)</th>
+                <th style="width:120px;">Ngày bắt đầu</th>
+                <th style="width:120px;">Ngày kết thúc</th>
+                <th style="width:120px;">Trạng thái</th>
+                <th class="actions-head">Thao tác</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                foreach (var km in Model)
+                {
+                    var hetHan = km.NgayKetThuc.HasValue && DateTime.Now.Date > km.NgayKetThuc.Value.Date;
+                    var dangHoatDong = km.TrangThai && !hetHan;
+
+                    <tr>
+                        <td class="code-cell">@($"KM{km.MaKM:000}")</td>
+                        <td><b>@km.TenKhuyenMai</b></td>
+                        <td class="muted">@km.MoTa</td>
+                        <td class="text-center"><b>@(km.PhanTramGiam ?? 0)%</b></td>
+                        <td>@(km.NgayBatDau?.ToString("dd/MM/yyyy"))</td>
+                        <td>@(km.NgayKetThuc?.ToString("dd/MM/yyyy"))</td>
+                        <td>
+                            @if (dangHoatDong)
+                            {
+                                <span class="badge success">Hoạt động</span>
+                            }
+                            else
+                            {
+                                <span class="badge danger">@((hetHan) ? "Hết hạn" : "Ngừng")</span>
+                            }
+                        </td>
+                        <td class="actions">
+                            <div class="actions-wrap">
+                                <button class="btn-view btn-icon tooltip-btn"
+                                        data-tip="Xem chi tiết"
+                                        onclick="viewKM(@km.MaKM)">
+                                    <i class="bi bi-file-earmark-text-fill"></i>
+                                </button>
+
+                                <button class="btn-edit btn-icon tooltip-btn"
+                                        data-tip="Sửa khuyến mãi"
+                                        onclick="editKM(@km.MaKM)">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+
+                                <button class="btn-delete btn-icon tooltip-btn"
+                                        data-tip="Ngừng khuyến mãi"
+                                        onclick="deleteKM(@km.MaKM)">
+                                    <i class="bi bi-trash3-fill"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="8" class="empty-row">Chưa có khuyến mãi nào.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div class="pagination-box">
+        @if (ViewBag.TotalPage > 1)
+        {
+            <ul class="pagination">
+                <li class="@(ViewBag.Page == 1 ? "disabled" : "")">
+                    <a href="?page=@(ViewBag.Page - 1)&search=@ViewBag.Search">‹</a>
+                </li>
+
+                @for (int i = 1; i <= ViewBag.TotalPage; i++)
+                {
+                    <li class="@(i == ViewBag.Page ? "active" : "")">
+                        <a href="?page=@i&search=@ViewBag.Search">@i</a>
+                    </li>
+                }
+
+                <li class="@(ViewBag.Page == ViewBag.TotalPage ? "disabled" : "")">
+                    <a href="?page=@(ViewBag.Page + 1)&search=@ViewBag.Search">›</a>
+                </li>
+            </ul>
+        }
+    </div>
+</div>
+
+
+<!-- ================= MODAL THÊM ================= -->
+<div id="addModal" class="modal-bg" style="display:none;">
+    <div class="modal-box modal-animate">
+        <div class="modal-header-flex">
+            <h3 class="modal-title">Thêm khuyến mãi mới</h3>
+            <button class="btn-close-modal" onclick="hideModal('#addModal')">×</button>
+        </div>
+
+        <label class="form-label">Tên khuyến mãi</label>
+        <div class="input-group">
+            <i class="bi bi-tag-fill"></i>
+            <input id="add_Ten" class="form-input" placeholder="Tên khuyến mãi...">
+        </div>
+
+        <label class="form-label">Mô tả</label>
+        <div class="input-group">
+            <i class="bi bi-card-text"></i>
+            <input id="add_MoTa" class="form-input" placeholder="Mô tả ngắn...">
+        </div>
+
+        <label class="form-label">Phần trăm giảm</label>
+        <div class="input-group">
+            <i class="bi bi-percent"></i>
+            <input id="add_Giam" type="number" class="form-input" placeholder="0 - 100" min="0" max="100">
+        </div>
+
+        <label class="form-label">Ngày bắt đầu</label>
+        <input id="add_BatDau" type="date" class="form-select" />
+
+        <label class="form-label">Ngày kết thúc</label>
+        <input id="add_KetThuc" type="date" class="form-select" />
+
+        <label class="form-label mt-2">Trạng thái</label>
+        <select id="add_TrangThai" class="form-select">
+            <option value="true">Hoạt động</option>
+            <option value="false">Ngừng hoạt động</option>
+        </select>
+
+        <div class="footer-area">
+            <button class="btn-save" onclick="saveAdd()">Lưu</button>
+            <button class="btn-close-custom" onclick="hideModal('#addModal')">Đóng</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- ================= MODAL SỬA ================= -->
+<div id="editModal" class="modal-bg" style="display:none;">
+    <div class="modal-box modal-animate">
+        <div class="modal-header-flex">
+            <h3 class="modal-title">Sửa khuyến mãi</h3>
+            <button class="btn-close-modal" onclick="hideModal('#editModal')">×</button>
+        </div>
+
+        <input type="hidden" id="edit_MaKM" />
+
+        <label class="form-label">Tên khuyến mãi</label>
+        <div class="input-group">
+            <i class="bi bi-tag-fill"></i>
+            <input id="edit_Ten" class="form-input">
+        </div>
+
+        <label class="form-label">Mô tả</label>
+        <div class="input-group">
+            <i class="bi bi-card-text"></i>
+            <input id="edit_MoTa" class="form-input">
+        </div>
+
+        <label class="form-label">Phần trăm giảm</label>
+        <div class="input-group">
+            <i class="bi bi-percent"></i>
+            <input id="edit_Giam" type="number" class="form-input" min="0" max="100">
+        </div>
+
+        <label class="form-label">Ngày bắt đầu</label>
+        <input id="edit_BatDau" type="date" class="form-select" />
+
+        <label class="form-label">Ngày kết thúc</label>
+        <input id="edit_KetThuc" type="date" class="form-select" />
+
+        <label class="form-label mt-2">Trạng thái</label>
+        <select id="edit_TrangThai" class="form-select">
+            <option value="true">Hoạt động</option>
+            <option value="false">Ngừng hoạt động</option>
+        </select>
+
+        <div class="footer-area">
+            <button class="btn-save" onclick="saveEdit()">Lưu</button>
+            <button class="btn-close-custom" onclick="hideModal('#editModal')">Đóng</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- ================= MODAL XEM ================= -->
+<div id="viewModal" class="modal-bg" style="display:none;">
+    <div class="modal-box modal-animate">
+        <div class="modal-header-flex">
+            <h3 class="modal-title">Thông tin khuyến mãi</h3>
+            <button class="btn-close-modal" onclick="hideModal('#viewModal')">×</button>
+        </div>
+
+        <div class="view-info">
+            <p><b>Tên:</b> <span id="v_Ten"></span></p>
+            <p><b>Mô tả:</b> <span id="v_MoTa"></span></p>
+            <p><b>Giảm:</b> <span id="v_Giam"></span></p>
+            <p><b>Ngày bắt đầu:</b> <span id="v_BatDau"></span></p>
+            <p><b>Ngày kết thúc:</b> <span id="v_KetThuc"></span></p>
+            <p><b>Trạng thái:</b> <span id="v_TrangThai"></span></p>
+        </div>
+
+        <div class="footer-area">
+            <button class="btn-close-custom" onclick="hideModal('#viewModal')">Đóng</button>
+        </div>
+    </div>
+</div>
+
+
+@section scripts{
+    <script>
+        // ===== MODAL UTIL =====
+        function showModal(selector) {
+            $(selector).addClass("active-bg");
+            $(selector).find(".modal-box").addClass("active");
+        }
+        function hideModal(selector) {
+            $(selector).removeClass("active-bg");
+            $(selector).find(".modal-box").removeClass("active");
+        }
+
+        function openAddModal() {
+            $("#add_Ten,#add_MoTa,#add_Giam,#add_BatDau,#add_KetThuc").val("");
+            $("#add_TrangThai").val("true");
+            showModal("#addModal");
+            setTimeout(() => $("#add_Ten").focus(), 100);
+        }
+
+        // ===== SAVE ADD =====
+        function saveAdd() {
+            const data = {
+                TenKhuyenMai: $("#add_Ten").val().trim(),
+                MoTa: $("#add_MoTa").val().trim(),
+                PhanTramGiam: $("#add_Giam").val(),
+                NgayBatDau: $("#add_BatDau").val(),
+                NgayKetThuc: $("#add_KetThuc").val(),
+                TrangThai: $("#add_TrangThai").val() === "true"
+            };
+
+            if (!data.TenKhuyenMai) {
+                Swal.fire("Thiếu thông tin!", "Vui lòng nhập tên khuyến mãi!", "warning");
+                return;
+            }
+
+            $.ajax({
+                url: "/Admin/KhuyenMai/Add",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(data),
+                success: function (res) {
+                    if (res === true) {
+                        Swal.fire("Thành công!", "Đã thêm khuyến mãi mới.", "success")
+                            .then(() => location.reload());
+                    } else {
+                        Swal.fire("Lỗi!", "Không thể thêm khuyến mãi!", "error");
+                    }
+                }
+            });
+        }
+
+        // ===== GET EDIT =====
+        function editKM(id) {
+            $.get("/Admin/KhuyenMai/Get/" + id, function (data) {
+                if (!data) return;
+
+                $("#edit_MaKM").val(data.MaKM);
+                $("#edit_Ten").val(data.TenKhuyenMai);
+                $("#edit_MoTa").val(data.MoTa);
+                $("#edit_Giam").val(data.PhanTramGiam);
+                $("#edit_BatDau").val(data.NgayBatDau);
+                $("#edit_KetThuc").val(data.NgayKetThuc);
+                $("#edit_TrangThai").val(data.TrangThai ? "true" : "false");
+
+                showModal("#editModal");
+                setTimeout(() => $("#edit_Ten").focus(), 60);
+            });
+        }
+
+        // ===== SAVE EDIT =====
+        function saveEdit() {
+            const data = {
+                MaKM: $("#edit_MaKM").val(),
+                TenKhuyenMai: $("#edit_Ten").val().trim(),
+                MoTa: $("#edit_MoTa").val().trim(),
+                PhanTramGiam: $("#edit_Giam").val(),
+                NgayBatDau: $("#edit_BatDau").val(),
+                NgayKetThuc: $("#edit_KetThuc").val(),
+                TrangThai: $("#edit_TrangThai").val() === "true"
+            };
+
+            if (!data.TenKhuyenMai) {
+                Swal.fire("Thiếu thông tin!", "Vui lòng nhập tên khuyến mãi!", "warning");
+                return;
+            }
+
+            $.ajax({
+                url: "/Admin/KhuyenMai/Edit",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(data),
+                success: function (res) {
+                    if (res === true) {
+                        Swal.fire("Thành công!", "Đã cập nhật khuyến mãi.", "success")
+                            .then(() => location.reload());
+                    } else {
+                        Swal.fire("Lỗi!", "Không thể lưu thay đổi!", "error");
+                    }
+                }
+            });
+        }
+
+        // ===== DELETE (Ngừng) =====
+        function deleteKM(id) {
+            Swal.fire({
+                title: "Ngừng khuyến mãi?",
+                text: "Khuyến mãi sẽ chuyển về trạng thái ngừng hoạt động.",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#E76F51",
+                cancelButtonColor: "#6c757d",
+                confirmButtonText: "Đồng ý",
+                cancelButtonText: "Hủy"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post("/Admin/KhuyenMai/Delete", { id }, function (res) {
+                        if (res === true) {
+                            Swal.fire("Đã cập nhật!", "Khuyến mãi đã ngừng.", "success")
+                                .then(() => location.reload());
+                        } else {
+                            Swal.fire("Lỗi!", "Không thể ngừng khuyến mãi!", "error");
+                        }
+                    });
+                }
+            });
+        }
+
+        // ===== VIEW =====
+        function viewKM(id) {
+            $.get("/Admin/KhuyenMai/Details/" + id, function (data) {
+                if (!data) return;
+
+                $("#v_Ten").text(data.TenKhuyenMai);
+                $("#v_MoTa").text(data.MoTa);
+                $("#v_Giam").text((data.PhanTramGiam || 0) + "%");
+                $("#v_BatDau").text(data.NgayBatDau);
+                $("#v_KetThuc").text(data.NgayKetThuc);
+                $("#v_TrangThai").text(data.TrangThai ? "Hoạt động" : "Ngừng");
+
+                showModal("#viewModal");
+            });
+        }
+
+        // ===== SEARCH =====
+        $("#btnSearch").click(function () {
+            let kw = $("#searchBox").val().trim();
+            window.location.href = "/Admin/KhuyenMai?search=" + encodeURIComponent(kw);
+        });
+        $("#searchBox").keypress(function (e) {
+            if (e.which === 13) $("#btnSearch").click();
+        });
+    </script>
+}

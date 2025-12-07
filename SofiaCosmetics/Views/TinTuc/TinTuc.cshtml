@@ -1,0 +1,243 @@
+﻿@model IEnumerable<SofiaCosmetics.Models.TINTUC>
+@using System
+@using System.Linq
+@using System.Text.RegularExpressions
+@using System.Collections.Generic
+@using System.Web
+
+@{
+    ViewBag.Title = "Tin tức";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    // ====== 1) LẤY LIST AN TOÀN ======
+    var items = (Model ?? Enumerable.Empty<SofiaCosmetics.Models.TINTUC>())
+                    .Where(x => x != null)
+                    .ToList();
+
+    // ====== 2) LỌC RA BLOG / TIN TỨC ======
+    // Nếu DB có cột IsBlog / LoaiTin / Type thì ưu tiên dùng.
+    bool HasProp(object obj, string name)
+    {
+        if (obj == null) return false;
+        var p = obj.GetType().GetProperty(name);
+        return p != null;
+    }
+
+    object GetProp(object obj, string name)
+    {
+        if (obj == null) return null;
+        var p = obj.GetType().GetProperty(name);
+        return p == null ? null : p.GetValue(obj, null);
+    }
+
+    bool IsBlogItem(SofiaCosmetics.Models.TINTUC t)
+    {
+        try
+        {
+            // IsBlog == true
+            if (HasProp(t, "IsBlog"))
+            {
+                var v = GetProp(t, "IsBlog");
+                if (v != null && v is bool) return (bool)v;
+            }
+
+            // LoaiTin / Type / Category ... == "blog" hoặc "tin-tuc"
+            if (HasProp(t, "LoaiTin"))
+            {
+                var s = (GetProp(t, "LoaiTin") ?? "").ToString().Trim().ToLower();
+                if (s.Contains("blog") || s.Contains("tin")) return true;
+                if (s.Contains("trang")) return false;
+            }
+
+            if (HasProp(t, "Type"))
+            {
+                var s = (GetProp(t, "Type") ?? "").ToString().Trim().ToLower();
+                if (s.Contains("blog") || s.Contains("tin")) return true;
+                if (s.Contains("trang")) return false;
+            }
+
+            if (HasProp(t, "DanhMuc"))
+            {
+                var s = (GetProp(t, "DanhMuc") ?? "").ToString().Trim().ToLower();
+                if (s.Contains("blog") || s.Contains("tin")) return true;
+            }
+        }
+        catch { }
+
+        // fallback: loại các slug tĩnh
+        var slug = (t.MetaTitle ?? "").Trim().ToLower();
+        var staticSlugs = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+{
+            "gioi-thieu",
+            "lien-he",
+            "chinh-sach-giao-hang",
+            "chinh-sach-doi-tra",
+            "chinh-sach-bao-mat",
+            "dieu-khoan-su-dung",
+            "huong-dan-mua-hang",
+            "tin-tuc",
+            "khuyen-mai"// trang chủ tin tức
+        };
+
+        if (staticSlugs.Contains(slug)) return false;
+
+        // không nằm trong static => coi là blog
+        return true;
+    }
+
+    items = items.Where(IsBlogItem)
+                 .OrderByDescending(x => x.NgayTao)
+                 .ToList();
+
+    // ====== 3) SEARCH THEO q ======
+    string q = (Request.QueryString["q"] ?? "").Trim();
+    if (!string.IsNullOrWhiteSpace(q))
+    {
+        var qq = q.ToLower();
+        items = items.Where(x =>
+        {
+            var title = (x.TenTrang ?? "").ToLower();
+            var raw = StripHtmlSafe(x.NoiDung);
+            var sum = raw.ToLower();
+            return title.Contains(qq) || sum.Contains(qq);
+        }).ToList();
+    }
+
+    // ====== 4) HÀM TIỆN ÍCH ======
+    string FirstImg(string html)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(html)) return null;
+
+            var decoded = HttpUtility.HtmlDecode(html);
+            var m = Regex.Match(decoded, "<img[^>]+src=[\"'](?<src>[^\"']+)[\"']", RegexOptions.IgnoreCase);
+            if (m.Success) return m.Groups["src"].Value;
+        }
+        catch { }
+        return null;
+    }
+
+    string StripHtmlSafe(string html)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(html)) return "";
+            var decoded = HttpUtility.HtmlDecode(html);
+            return Regex.Replace(decoded, "<.*?>", " ").Trim();
+        }
+        catch { return ""; }
+    }
+
+    string ShortText(string s, int max = 140)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return "";
+        s = s.Trim();
+        return s.Length > max ? s.Substring(0, max) + "..." : s;
+    }
+
+    string FormatDate(object dateObj)
+    {
+        try
+        {
+            if (dateObj == null) return "";
+            var d = Convert.ToDateTime(dateObj);
+            return d.ToString("dd/MM/yyyy");
+        }
+        catch { return ""; }
+    }
+}
+
+<section class="news-page sf-static container">
+    <div class="news-header">
+        <h2 class="sf-static__title">Tin tức</h2>
+
+        <form class="news-search" method="get" action="/tin-tuc">
+            <input type="text" name="q" value="@q" placeholder="Tìm bài viết..." />
+            <button type="submit">Tìm</button>
+        </form>
+    </div>
+
+    @if (items.Count == 0)
+    {
+        <div class="news-empty">
+            Chưa có bài viết nào.
+        </div>
+    }
+    else
+    {
+        <div class="news-grid">
+            @foreach (var t in items)
+            {
+                var cover = FirstImg(t.NoiDung) ?? "https://via.placeholder.com/600x400?text=Sofia+News";
+                var text = ShortText(StripHtmlSafe(t.NoiDung), 140);
+                var url = Url.Action("ChiTiet", "TinTuc", new { slug = t.MetaTitle });
+
+                <article class="news-card">
+                    <a class="news-thumb-wrap" href="@url">
+                        <img src="@cover" alt="@t.TenTrang" class="news-thumb" />
+                    </a>
+
+                    <div class="news-body">
+                        <div class="news-date">@FormatDate(t.NgayTao)</div>
+
+                        <h3 class="news-title">
+                            <a href="@url">@t.TenTrang</a>
+                        </h3>
+
+                        <p class="news-sum">@text</p>
+
+                        <a class="news-more" href="@url">Đọc tiếp →</a>
+                    </div>
+                </article>
+            }
+        </div>
+    }
+</section>
+
+<style>
+    .news-page { padding: 24px 0 40px; }
+    .news-header {
+        display:flex; align-items:center; justify-content:space-between; gap:16px;
+        margin-bottom: 18px;
+    }
+    .news-search { display:flex; gap:8px; align-items:center; }
+    .news-search input{
+        width: 260px; max-width: 60vw;
+        padding:10px 12px; border-radius:999px; border:1px solid #eee; outline:none;
+    }
+    .news-search button{
+        padding:10px 18px; border-radius:999px; border:none; cursor:pointer;
+        background:#ff7aa8; color:#fff; font-weight:600;
+    }
+
+    .news-grid{
+        display:grid; grid-template-columns:repeat(3, 1fr); gap:18px;
+    }
+    @@media (max-width: 992px){
+        .news-grid{ grid-template-columns:repeat(2, 1fr); }
+    }
+    @@media (max-width: 576px){
+        .news-grid{ grid-template-columns:1fr; }
+    }
+
+    .news-card{
+        background:#fff; border:1px solid #f2f2f2; border-radius:14px; overflow:hidden;
+        box-shadow:0 2px 8px rgba(0,0,0,0.04);
+        display:flex; flex-direction:column;
+    }
+    .news-thumb-wrap{ display:block; }
+    .news-thumb{
+        width:100%; height:210px; object-fit:cover; display:block; background:#fafafa;
+    }
+    .news-body{ padding:14px 14px 16px; display:flex; flex-direction:column; gap:8px; }
+    .news-date{ font-size:13px; color:#888; }
+    .news-title{ font-size:18px; font-weight:700; margin:0; line-height:1.3; }
+    .news-title a{ color:#111; text-decoration:none; }
+    .news-title a:hover{ color:#ff7aa8; }
+    .news-sum{ color:#444; font-size:14px; line-height:1.55; min-height:44px; }
+    .news-more{
+        margin-top:4px; align-self:flex-start; font-weight:600; color:#ff7aa8; text-decoration:none;
+    }
+    .news-empty{ padding:28px; background:#fff; border-radius:12px; border:1px dashed #eee; }
+</style>

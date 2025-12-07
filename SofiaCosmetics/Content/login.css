@@ -1,0 +1,246 @@
+﻿/* 🌸 Toàn bộ nền ngoài */
+.login-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    /* Màu nền: trắng pha hồng cực nhẹ */
+    background: linear-gradient(135deg, #FFFFFF, #FFF5F6);
+    padding: 40px 20px;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* 💕 Khung đăng nhập đậm hơn một chút */
+.login-card {
+    width: 100%;
+    max-width: 400px;
+    background: #FFE8E8; /* 👈 hồng nhạt đậm hơn nền ngoài */
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 10px 30px rgba(255, 182, 193, 0.25);
+    text-align: center;
+    border: 1px solid #FFD9D6;
+    animation: fadeInUp 0.6s ease both;
+}
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(25px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.login-card h2 {
+    margin-bottom: 25px;
+    color: #a74a5c;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+/* 🧁 INPUTS */
+.login-card .form-group {
+    margin-bottom: 18px;
+    position: relative;
+}
+
+.login-card input[type="email"],
+.login-card input[type="password"],
+.login-card input[type="text"] {
+    width: 100%;
+    padding: 14px 45px 14px 15px;
+    border-radius: 10px;
+    border: 1px solid #FFD9D6;
+    font-size: 14px;
+    background-color: #fffafa;
+    transition: all 0.3s ease;
+}
+
+.login-card input:focus {
+    border-color: #FFB6C1;
+    box-shadow: 0 0 6px rgba(255, 182, 193, 0.6);
+    outline: none;
+}
+
+/* 👁 ICON MẮT */
+.password-wrapper {
+    position: relative;
+}
+
+    .password-wrapper #eye {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+        font-size: 18px;
+        color: #a74a5c;
+    }
+
+/* ☑️ GHI NHỚ */
+.form-remember {
+    text-align: left;
+    margin-bottom: 25px;
+    font-size: 14px;
+    color: #5b3a3a;
+}
+
+    .form-remember input[type="checkbox"] {
+        margin-right: 8px;
+    }
+
+/* 💖 NÚT ĐĂNG NHẬP */
+.login-card button {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #FFC1CC, #FFD6D3);
+    color: #7b3f3f;
+    font-weight: bold;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(255, 182, 193, 0.4);
+}
+
+    .login-card button:hover {
+        background: linear-gradient(135deg, #FFB6C1, #FFC1CC);
+        transform: translateY(-2px);
+    }
+
+/* 🚨 THÔNG BÁO LỖI */
+.login-error {
+    color: #a74a5c;
+    margin-bottom: 15px;
+    font-size: 14px;
+    background: #FFE9E7;
+    padding: 8px;
+    border-radius: 8px;
+}
+
+/* 🌺 FOOTER */
+.login-footer {
+    margin-top: 25px;
+    font-size: 15px;
+    text-align: center;
+}
+
+    .login-footer p {
+        margin: 8px 0;
+        color: #7b5e5e;
+    }
+
+    /* 🌸 DIVIDER */
+    .login-footer .divider {
+        position: relative;
+        margin: 15px 0;
+        color: #b39090;
+        font-size: 13px;
+    }
+
+        .login-footer .divider span {
+            background: #FFF7F6;
+            padding: 0 10px;
+        }
+
+        .login-footer .divider::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 50%;
+            border-top: 1px solid #FFD9D6;
+        }
+
+/* 💗 NÚT LINK DƯỚI */
+.btn-link {
+    display: inline-block;
+    text-decoration: none;
+    padding: 10px 25px;
+    border-radius: 30px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+/* ✨ Nút Đăng ký */
+.register-link {
+    background: #fff;
+    color: #7b3f3f;
+    padding: 8px 20px;
+    border-radius: 25px;
+    transition: all 0.3s ease;
+    border: 1px solid #ffc1cc;
+}
+
+.register-link:hover {
+    background: linear-gradient(135deg, #FFC1CC, #FFFAF0);
+    transform: translateY(-2px);
+    color: #7b3f3f;
+    text-decoration: none;
+    box-shadow: 0 3px 6px rgba(255, 193, 204, 0.4);
+}
+
+/* 💕 Nút Quên mật khẩu */
+.forgot-link {
+    color: #a74a5c;
+    border: 1px solid #FFD9D6;
+    background: #fff;
+    text-decoration: none;
+}
+
+    .forgot-link:hover {
+        background: #FFE4E1;
+        color: #7b3f3f;
+        text-decoration: none;
+    }
+
+/* 🧼 Ngăn trình duyệt tự tô xanh link */
+a, a:visited, a:hover, a:active {
+    color: inherit;
+    text-decoration: none;
+}
+
+/* 🍑 SCROLLBAR */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #FFD9D6;
+    border-radius: 4px;
+}
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #FFC1CC;
+    }
+/* Để label hiển thị đúng */
+.input-label {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 6px;
+    color: #7b3f3f;
+    text-align: left;
+    font-weight: 500;
+}
+
+/* Làm đẹp 2 nút Google + Facebook */
+.btn-social {
+    background: white;
+    border: 1px solid #ffd9d6;
+    padding: 10px 20px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    transition: 0.3s;
+}
+
+    .btn-social:hover {
+        background: #fff3f3;
+    }

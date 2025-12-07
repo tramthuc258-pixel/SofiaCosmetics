@@ -1,0 +1,183 @@
+﻿/* ========== GLOBAL ========== */
+body {
+    background: #faf7f4;
+    font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: #4b3f38;
+}
+
+h5 {
+    font-weight: 600;
+    color: #4b3f38;
+    margin-bottom: 0.75rem;
+}
+
+/* ========== SIDEBAR ========== */
+.sidebar {
+    width: 260px;
+    height: 100vh;
+    background: #f7efe9;
+    padding: 24px 0;
+    position: fixed;
+    left: 0;
+    top: 0;
+    border-right: 1px solid #ecdcd1;
+}
+
+.sidebar-title {
+    font-weight: 700;
+    text-align: left;
+    padding: 0 24px 20px 24px;
+    color: #4b3f38;
+    font-size: 20px;
+}
+
+.sidebar a {
+    padding: 10px 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+    text-decoration: none;
+    color: #6c5f55;
+    border-radius: 999px;
+    margin: 3px 12px;
+    transition: 0.15s;
+}
+
+.sidebar a i {
+    font-size: 17px;
+}
+
+.sidebar a:hover,
+.sidebar a.active {
+    background: #eadacc;
+    color: #3f332c;
+}
+
+/* ========== CONTENT WRAP ========== */
+.content {
+    margin-left: 260px;
+    padding: 26px 30px;
+}
+
+/* ========== NAVBAR ========== */
+.navbar-custom {
+    background: #fdfaf7;
+    border-radius: 999px;
+    padding: 12px 20px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.04);
+    margin-bottom: 24px;
+}
+
+/* ========== CARD SOFT ========== */
+.card-soft {
+    background: #fdfaf7;
+    border-radius: 22px;
+    padding: 18px 20px;
+    border: 1px solid #f1e4da;
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.04);
+    width: 100%;
+}
+
+.card-soft .label {
+    font-size: 14px;
+    color: #8a7d73;
+}
+
+.card-soft .big-number {
+    font-size: 32px;
+    font-weight: 700;
+    margin-top: 6px;
+    color: #2a221d;
+}
+
+/* ========== BEST PRODUCTS ========== */
+.best-products {
+    display: flex;
+    gap: 30px;
+    margin-top: 10px;
+}
+
+.best-product-item {
+    text-align: left;
+    font-size: 14px;
+    color: #4b3f38;
+}
+
+.best-product-item img {
+    width: 78px;
+    height: 110px;
+    border-radius: 18px;
+    object-fit: cover;
+    margin-bottom: 8px;
+    background: #f3ece6;
+}
+
+/* ========== SMALL STATS BOX (ĐƠN HÀNG) ========== */
+.order-status-box {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 14px;
+    color: #4b3f38;
+}
+
+.order-status-box span b {
+    font-weight: 600;
+}
+
+/* ========== BADGE / TAG ========== */
+.badge-soft {
+    background: #f7e4d6;
+    padding: 4px 10px;
+    border-radius: 999px;
+    color: #6b4f3d;
+    font-size: 12px;
+}
+
+/* ========== TABLE WIDGET ========== */
+.widget-card {
+    background: #fdfaf7;
+    border-radius: 22px;
+    padding: 18px 20px;
+    border: 1px solid #f1e4da;
+    box-shadow: 0 14px 40px rgba(0,0,0,0.04);
+    font-size: 14px;
+}
+
+.widget-card table {
+    width: 100%;
+}
+
+.widget-card th {
+    font-weight: 600;
+    color: #7a6d63;
+    padding-bottom: 6px;
+}
+
+.widget-card td {
+    padding: 4px 0;
+    color: #4b3f38;
+}
+
+/* ========== SIMPLE CHART MOCK ========== */
+.chart-area {
+    height: 160px;
+    border-radius: 16px;
+    background: linear-gradient(180deg, #ffeadd 0%, #fff7f1 50%, #ffffff 95%);
+    position: relative;
+    overflow: hidden;
+}
+
+.chart-line {
+    position: absolute;
+    inset: 0 8px 18px 8px;
+    border-radius: 999px;
+    border-bottom: 2px solid rgba(233, 164, 129, 0.7);
+}
+
+/* ========== UTILS ========== */
+.text-muted-soft {
+    color: #978b81;
+    font-size: 13px;
+}

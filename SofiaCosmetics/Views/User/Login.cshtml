@@ -1,0 +1,86 @@
+﻿@model SofiaCosmetics.Models.KHACHHANG
+
+@{
+    ViewBag.Title = "Login";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link rel="stylesheet" href="~/Content/login.css" />
+
+<div class="login-wrapper">
+    <div class="login-card">
+        <h2>ĐĂNG NHẬP TÀI KHOẢN</h2>
+
+        @if (ViewBag.Error != null)
+        {
+            <div class="login-error">@ViewBag.Error</div>
+        }
+
+        <form method="post" action="/User/Login">
+            @Html.AntiForgeryToken()
+
+            <!-- INPUT EMAIL -->
+            <div class="form-group">
+                <label class="input-label">Số điện thoại / Email</label>
+                <input type="email" name="Email" placeholder="Nhập tài khoản..." required />
+            </div>
+
+            <!-- INPUT PASSWORD -->
+            <div class="form-group password-wrapper">
+                <label class="input-label">Mật khẩu</label>
+                <input type="password" name="MatKhau" id="pwd" placeholder="Nhập mật khẩu..." required />
+                <span id="eye">&#128065;</span>
+            </div>
+
+            <!-- REMEMBER + FORGOT -->
+            <div class="form-remember" style="display:flex; justify-content:space-between; align-items:center;">
+                <label>
+                    <input type="checkbox" name="RememberMe" /> Ghi nhớ mật khẩu
+                </label>
+
+                <a href="/User/ForgotPassword" class="forgot-link">Quên mật khẩu?</a>
+            </div>
+
+            <!-- BUTTON -->
+            <button type="submit">Đăng nhập</button>
+
+            <div class="login-footer">
+
+                <p>Chưa có tài khoản?</p>
+                <a href="/User/Register" class="btn-link register-link">Đăng ký ngay</a>
+
+                <div class="divider"><span>hoặc</span></div>
+
+                <!-- SOCIAL LOGIN -->
+                <div style="display:flex; justify-content:center; gap:15px; margin-top:10px;">
+
+                    <a href="/User/LoginGoogle"
+                       class="btn-link"
+                       style="border:1px solid #FFD9D6; background:white; padding:10px 20px; border-radius:10px;">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/4/4a/Logo_2013_Google.png"
+                             style="height:18px; margin-right:5px;" />
+                    </a>
+
+                    <a href="/User/LoginFacebook"
+                       class="btn-link"
+                       style="border:1px solid #FFD9D6; background:white; padding:10px 20px; border-radius:10px;">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/0/05/Facebook_Logo_%282019%29.png"
+                             style="height:20px; margin-right:5px;" />
+                    </a>
+
+                </div>
+
+            </div>
+
+        </form>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+        document.getElementById("eye").onclick = function () {
+            var pwd = document.getElementById("pwd");
+            pwd.type = (pwd.type === "password") ? "text" : "password";
+        };
+    </script>
+}

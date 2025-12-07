@@ -1,0 +1,433 @@
+﻿@model IEnumerable<SofiaCosmetics.Models.AdminModels.AdminKhachHang>
+@section styles{
+    <link href="~/Content/admin-khachhang.css" rel="stylesheet" />
+}
+
+@{
+    ViewBag.Title = "Quản lý khách hàng";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<div class="top-action-bar">
+    <h2 class="page-title">Quản lý khách hàng</h2>
+    <div class="search-area">
+        <input type="text" name="search" id="searchBox" placeholder="Tìm kiếm khách hàng..." value="@ViewBag.Search" />
+
+        <button class="btn-search" id="btnSearch">
+            <i class="bi bi-search"></i>
+        </button>
+
+        <a href="/Admin/KhachHang" class="btn-reset">
+            <i class="bi bi-arrow-clockwise"></i>
+        </a>
+    </div>
+
+    <div class="action-buttons">
+        <button class="btn-add" onclick="openAddModal()">
+            <i class="bi bi-person-plus"></i> Thêm khách hàng
+        </button>
+
+        <a href="/Admin/KhachHang/ExportExcel" class="btn-excel">
+            <i class="bi bi-download"></i> Xuất Excel
+        </a>
+    </div>
+</div>
+
+<!-- TABLE CARD -->
+<div class="customer-card">
+    <table class="customer-table">
+        <thead>
+            <tr>
+                <th>Mã KH</th>
+                <th>Khách hàng</th>
+                <th>Email</th>
+                <th>Số điện thoại</th>
+                <th>Địa chỉ</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach (var kh in Model)
+            {
+                <tr>
+                    <td>@($"KH{kh.MaKH:000}")</td>
+
+                    <td class="kh-info">
+                        <div class="kh-avatar">
+                            @(string.IsNullOrEmpty(kh.HoTen) ? "?" : kh.HoTen.Trim()[0].ToString().ToUpper())
+                        </div>
+                        <span>@kh.HoTen</span>
+                    </td>
+
+                    <td>@kh.Email</td>
+                    <td>@kh.SDT</td>
+                    <td>@kh.DiaChi</td>
+
+                    <td>
+                        @if (kh.TrangThai)
+                        {
+                            <span class="badge success">Hoạt động</span>
+                        }
+                        else
+                        {
+                            <span class="badge danger">Ngừng hoạt động</span>
+                        }
+                    </td>
+
+                    <td class="text-end actions">
+                        <button class="btn-view btn-icon tooltip-btn"
+                                data-tip="Xem chi tiết"
+                                title="Xem chi tiết"
+                                aria-label="Xem chi tiết"
+                                onclick="viewKH(@kh.MaKH)">
+                            <i class="bi bi-file-earmark-text-fill"></i>
+                        </button>
+
+                        <button class="btn-edit btn-icon tooltip-btn"
+                                data-tip="Sửa khách hàng"
+                                title="Sửa khách hàng"
+                                aria-label="Sửa khách hàng"
+                                onclick="editKH(@kh.MaKH)">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+
+                        <button class="btn-delete btn-icon tooltip-btn"
+                                data-tip="Xóa khách hàng"
+                                title="Xóa khách hàng"
+                                aria-label="Xóa khách hàng"
+                                onclick="deleteKH(@kh.MaKH)">
+                            <i class="bi bi-trash3-fill"></i>
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="pagination-box">
+        @if (ViewBag.TotalPage > 1)
+        {
+            <ul class="pagination">
+                <!-- Prev -->
+                <li class="@(ViewBag.Page == 1 ? "disabled" : "")">
+                    <a href="?page=@(ViewBag.Page - 1)&search=@ViewBag.Search">‹</a>
+                </li>
+
+                <!-- Number -->
+                @for (int i = 1; i <= ViewBag.TotalPage; i++)
+                {
+                    <li class="@(i == ViewBag.Page ? "active" : "")">
+                        <a href="?page=@i&search=@ViewBag.Search">@i</a>
+                    </li>
+                }
+
+                <!-- Next -->
+                <li class="@(ViewBag.Page == ViewBag.TotalPage ? "disabled" : "")">
+                    <a href="?page=@(ViewBag.Page + 1)&search=@ViewBag.Search">›</a>
+                </li>
+            </ul>
+        }
+    </div>
+
+</div>
+
+<!-- MODAL THÊM -->
+<div id="addModal" class="modal-bg" style="display:none;">
+    <div class="modal-box modal-animate">
+
+        <div class="modal-header-flex">
+            <h3 class="modal-title">Thêm khách hàng mới</h3>
+            <button class="btn-close-modal" onclick="hideModal('#addModal')">×</button>
+        </div>
+
+        <div class="input-group">
+            <i class="bi bi-person-fill"></i>
+            <input id="add_HoTen" class="form-input" placeholder="Nhập họ tên...">
+        </div>
+
+        <div class="input-group">
+            <i class="bi bi-envelope-fill"></i>
+            <input id="add_Email" class="form-input" placeholder="Nhập email...">
+        </div>
+
+        <div class="input-group">
+            <i class="bi bi-telephone-fill"></i>
+            <input id="add_SDT" class="form-input" placeholder="Nhập số điện thoại...">
+        </div>
+
+        <div class="input-group">
+            <i class="bi bi-geo-alt-fill"></i>
+            <input id="add_DiaChi" class="form-input" placeholder="Nhập địa chỉ...">
+        </div>
+
+        <div class="footer-area">
+            <button class="btn-save" onclick="saveAdd()">Lưu</button>
+            <button class="btn-close" onclick="hideModal('#addModal')">Đóng</button>
+        </div>
+
+    </div>
+</div>
+
+<!-- MODAL SỬA -->
+<div id="editModal" class="modal-bg" style="display:none;">
+    <div class="modal-box modal-animate">
+
+        <div class="modal-header-flex">
+            <h3 class="modal-title">Sửa khách hàng</h3>
+            <button class="btn-close-modal" onclick="hideModal('#editModal')">×</button>
+        </div>
+
+        <input type="hidden" id="edit_MaKH" />
+
+        <div class="input-group">
+            <i class="bi bi-person-fill"></i>
+            <input id="edit_HoTen" class="form-input">
+        </div>
+
+        <div class="input-group">
+            <i class="bi bi-envelope-fill"></i>
+            <input id="edit_Email" class="form-input">
+        </div>
+
+        <div class="input-group">
+            <i class="bi bi-telephone-fill"></i>
+            <input id="edit_SDT" class="form-input">
+        </div>
+
+        <div class="input-group">
+            <i class="bi bi-geo-alt-fill"></i>
+            <input id="edit_DiaChi" class="form-input">
+        </div>
+
+        <label class="mt-2">Trạng thái:</label>
+        <select id="edit_TrangThai" class="form-select">
+            <option value="true">Hoạt động</option>
+            <option value="false">Ngừng hoạt động</option>
+        </select>
+
+        <div class="footer-area">
+            <button class="btn-save" onclick="saveEdit()">Lưu</button>
+            <button class="btn-close" onclick="hideModal('#editModal')">Đóng</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL XEM THÔNG TIN -->
+<div id="viewModal" class="modal-bg" style="display:none;">
+    <div class="modal-box modal-animate">
+
+        <div class="modal-header-flex">
+            <h3 class="modal-title">Thông tin khách hàng</h3>
+            <button class="btn-close-modal" onclick="hideModal('#viewModal')">×</button>
+        </div>
+
+        <div class="view-avatar">@* auto avatar *@</div>
+
+        <div class="view-info">
+            <p><b>Họ tên:</b> <span id="v_HoTen"></span></p>
+            <p><b>Email:</b> <span id="v_Email"></span></p>
+            <p><b>SĐT:</b> <span id="v_SDT"></span></p>
+            <p><b>Địa chỉ:</b> <span id="v_DiaChi"></span></p>
+            <p><b>Ngày tạo:</b> <span id="v_NgayTao"></span></p>
+            <p><b>Trạng thái:</b> <span id="v_TrangThai"></span></p>
+        </div>
+
+        <div class="footer-area">
+            <button class="btn-close" onclick="hideModal('#viewModal')">Đóng</button>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+
+        /* ------------------------
+            UTIL — ANIMATION
+        ------------------------ */
+        function showModal(selector) {
+            $(selector).addClass("active-bg");
+            $(selector).find(".modal-box").addClass("active");
+        }
+
+        function hideModal(selector) {
+            $(selector).removeClass("active-bg");
+            $(selector).find(".modal-box").removeClass("active");
+        }
+
+        /* ------------------------
+            OPEN ADD MODAL
+        ------------------------ */
+        function openAddModal() {
+            $("#add_HoTen").val("");
+            $("#add_Email").val("");
+            $("#add_SDT").val("");
+            $("#add_DiaChi").val("");
+
+            showModal("#addModal");
+
+            // Auto focus input đầu tiên
+            setTimeout(() => $("#add_HoTen").focus(), 100);
+        }
+
+        /* ------------------------
+            SAVE NEW CUSTOMER
+        ------------------------ */
+        function saveAdd() {
+
+            const data = {
+                HoTen: $("#add_HoTen").val().trim(),
+                Email: $("#add_Email").val().trim(),
+                SDT: $("#add_SDT").val().trim(),
+                DiaChi: $("#add_DiaChi").val().trim()
+            };
+
+            if (!data.HoTen) {
+                Swal.fire("Thiếu thông tin!", "Vui lòng nhập họ tên!", "warning");
+                return;
+            }
+
+            $.ajax({
+                url: "/Admin/KhachHang/Add",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(data),
+                success: function (res) {
+                    if (res === true) {
+                        Swal.fire("Thành công!", "Đã thêm khách hàng mới.", "success")
+                            .then(() => location.reload());
+                    } else {
+                        Swal.fire("Lỗi!", "Không thể thêm khách hàng!", "error");
+                    }
+                }
+            });
+        }
+
+        /* ------------------------
+            GET CUSTOMER → EDIT
+        ------------------------ */
+        function editKH(id) {
+
+            $.get("/Admin/KhachHang/Get/" + id, function (data) {
+                if (!data) return;
+
+                $("#edit_MaKH").val(data.MaKH);
+                $("#edit_HoTen").val(data.HoTen);
+                $("#edit_Email").val(data.Email);
+                $("#edit_SDT").val(data.SDT);
+                $("#edit_DiaChi").val(data.DiaChi);
+                $("#edit_TrangThai").val(data.TrangThai ? "true" : "false");
+
+                showModal("#editModal");
+
+                setTimeout(() => $("#edit_HoTen").focus(), 50);
+            });
+        }
+
+        /* ------------------------
+            SAVE EDITED CUSTOMER
+        ------------------------ */
+        function saveEdit() {
+
+            const data = {
+                MaKH: $("#edit_MaKH").val(),
+                HoTen: $("#edit_HoTen").val().trim(),
+                Email: $("#edit_Email").val().trim(),
+                SDT: $("#edit_SDT").val().trim(),
+                DiaChi: $("#edit_DiaChi").val().trim(),
+                TrangThai: $("#edit_TrangThai").val() === "true"
+            };
+
+            $.ajax({
+                url: "/Admin/KhachHang/Edit",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(data),
+                success: function (res) {
+                    if (res === true) {
+                        Swal.fire({
+                            title: "Thành công!",
+                            text: "Đã cập nhật thông tin khách hàng.",
+                            icon: "success",
+                            iconColor: "#2A9D8F",
+                            confirmButtonColor: "#6C63FF",
+                            position: "center",
+                        })
+
+                            .then(() => location.reload());
+                    } else {
+                        Swal.fire("Lỗi!", "Không thể lưu thay đổi!", "error");
+                    }
+                }
+            });
+        }
+
+        /* ------------------------
+            DELETE CUSTOMER
+        ------------------------ */
+        function deleteKH(id) {
+
+            Swal.fire({
+                title: "Xóa khách hàng?",
+                text: "Bạn có chắc muốn xóa khách hàng này không?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#E76F51",
+                cancelButtonColor: "#6c757d",
+                confirmButtonText: "Xóa",
+                cancelButtonText: "Hủy"
+            }).then((result) => {
+
+                if (result.isConfirmed) {
+
+                    $.post("/Admin/KhachHang/Delete", { id: id }, function (res) {
+
+                        if (res === true) {
+                            Swal.fire("Đã xóa!", "Khách hàng đã được xóa.", "success")
+                                .then(() => location.reload());
+                        } else {
+                            Swal.fire("Lỗi!", "Không thể xóa khách hàng!", "error");
+                        }
+
+                    });
+                }
+            });
+        }
+
+        /* ------------------------
+            VIEW CUSTOMER DETAIL
+        ------------------------ */
+        function viewKH(id) {
+
+            $.get("/Admin/KhachHang/Details/" + id, function (data) {
+
+                if (!data) return;
+
+                $("#v_HoTen").text(data.HoTen);
+                $("#v_Email").text(data.Email);
+                $("#v_SDT").text(data.SDT);
+                $("#v_DiaChi").text(data.DiaChi);
+                $("#v_NgayTao").text(data.NgayTao);
+                $("#v_TrangThai").text(data.TrangThai);
+
+                // Avatar
+                const firstLetter = data.HoTen ? data.HoTen.trim()[0].toUpperCase() : "?";
+                $(".view-avatar").text(firstLetter);
+
+                showModal("#viewModal");
+            });
+        }
+
+        $("#btnSearch").click(function () {
+            let kw = $("#searchBox").val().trim();
+            window.location.href = "/Admin/KhachHang?search=" + encodeURIComponent(kw);
+        });
+
+        $("#searchBox").keypress(function (e) {
+            if (e.which == 13) $("#btnSearch").click();
+        });
+
+    </script>
+
+}

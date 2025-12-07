@@ -1,0 +1,93 @@
+﻿@model PagedList.IPagedList<SofiaCosmetics.Models.ViewModels.SanPhamViewModel>
+@using PagedList.Mvc;
+
+@{
+    ViewBag.Title = "Khuyến mãi";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<section class="trending-product section" style="margin-top:12px;">
+    <div class="container">
+
+        <div class="row">
+            <div class="col-12">
+                <div class="section-title text-center">
+                    <h2>🔥 Tất Cả Sản Phẩm Khuyến Mãi</h2>
+                    @*<p>Giá sốc mỗi ngày — admin cập nhật là trang đổi ngay</p>*@
+                </div>
+            </div>
+        </div>
+
+        @if (Model == null || !Model.Any())
+        {
+            <div class="text-center py-5">
+                <i class="lni lni-offer fs-1 text-muted"></i>
+                <h5 class="mt-3 text-muted">Hiện chưa có sản phẩm khuyến mãi.</h5>
+                <a href="@Url.Action("Index", "Home")" class="btn btn-pink mt-3 px-4">
+                    Tiếp tục mua sắm
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="row">
+                @foreach (var item in Model)
+                {
+                    <div class="col-lg-3 col-md-6 col-12 mb-4">
+                        <div class="single-product">
+
+                            <div class="product-image">
+                                @if (item.PhanTramGiam > 0)
+                                {
+                                    <span class="discount-badge">-@item.PhanTramGiam% OFF</span>
+                                }
+
+                                <img src="@Url.Content("~" + (item.HinhAnh ?? "/images/products/no-image.jpg"))"
+                                     alt="@item.TenSP" />
+
+                                <div class="overlay">
+                                    <!-- Quick view popup chọn biến thể -->
+                                    <button type="button"
+                                            class="btn btn-pink quick-view-btn"
+                                            data-id="@item.MaSP">
+                                        <i class="lni lni-eye"></i> Xem nhanh
+                                    </button>
+
+                                    <!-- Wishlist -->
+                                    <a href="javascript:void(0);"
+                                       class="btn favorite add-to-wishlist"
+                                       data-id="@item.MaSP">
+                                        <i class="lni lni-heart"></i> Yêu thích
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="product-info">
+                                <h4 class="title">
+                                    <a href="@Url.Action("ChiTietSP", "Home", new { id = item.MaSP })">
+                                        @item.TenSP
+                                    </a>
+                                </h4>
+
+                                <div class="price">
+                                    <span class="old-price">@String.Format("{0:N0}₫", item.Gia)</span>
+                                    <span class="new-price">@String.Format("{0:N0}₫", item.GiaKhuyenMai)</span>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- PHÂN TRANG -->
+            <div class="pagination-container text-center mt-4">
+                @Html.PagedListPager(
+                    Model,
+                    p => Url.Action("Index", "KhuyenMai", new { page = p }),
+                    PagedListRenderOptions.ClassicPlusFirstAndLast
+                )
+            </div>
+        }
+    </div>
+</section>

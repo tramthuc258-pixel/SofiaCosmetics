@@ -1,0 +1,393 @@
+﻿@model IEnumerable<SofiaCosmetics.Models.AdminModels.AdminNewsListVM>
+@section styles{
+    <link href="~/Content/admin-tintuc.css" rel="stylesheet" />
+}
+@{
+    ViewBag.Title = "Quản lý tin tức";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<!-- CKEditor 4.20.0 + CKFinder 2.6.2 -->
+<script src="~/ckeditor/ckeditor.js"></script>
+<script src="~/ckfinder/ckfinder.js"></script>
+
+<div class="top-action-bar">
+    <h2 class="page-title">Quản lý tin tức</h2>
+
+    <!-- ✅ FORM GET: đảm bảo search gửi đúng query string -->
+    <form class="search-area" method="get" action="/Admin/TinTuc/Index">
+        <input type="text"
+               id="searchBox"
+               name="search"
+               placeholder="Tìm kiếm tin tức..."
+               value="@ViewBag.Search" />
+
+        <button class="btn-search" id="btnSearch" type="submit" title="Tìm kiếm">
+            <i class="bi bi-search"></i>
+        </button>
+
+        <a href="/Admin/TinTuc" class="btn-reset" title="Làm mới">
+            <i class="bi bi-arrow-clockwise"></i>
+        </a>
+    </form>
+
+    <div class="action-buttons">
+        <button class="btn-add" onclick="openCreateModal()">
+            <i class="bi bi-file-earmark-plus"></i> Thêm bài viết
+        </button>
+    </div>
+</div>
+
+<div class="table-card">
+    <table class="table-main">
+        <thead>
+            <tr>
+                <th style="width:110px;">Mã TT</th>
+                <th>Tên trang</th>
+                <th style="width:140px;">Ngày tạo</th>
+                <th style="width:220px;">Meta title</th>
+                <th class="actions-head">Thao tác</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                foreach (var tt in Model)
+                {
+                    <tr>
+                        <td class="code-cell">@($"TT{tt.MaTT:000}")</td>
+                        <td>
+                            <div class="title-main">@tt.TenTrang</div>
+                            <div class="title-sub">@tt.MetaTitle</div>
+                        </td>
+                        <td>
+                            @(tt.NgayTao.HasValue ? tt.NgayTao.Value.ToString("dd/MM/yyyy") : "")
+                        </td>
+                        <td class="meta-cell">@tt.MetaTitle</td>
+
+                        <td class="actions-cell">
+                            <div class="actions">
+                                <button class="btn-view btn-icon tooltip-btn"
+                                        data-tip="Xem chi tiết"
+                                        onclick="viewNews(@tt.MaTT)">
+                                    <i class="bi bi-file-earmark-text-fill"></i>
+                                </button>
+
+                                <button class="btn-edit btn-icon tooltip-btn"
+                                        data-tip="Sửa bài viết"
+                                        onclick="openEditModal(@tt.MaTT)">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+
+                                <button class="btn-delete btn-icon tooltip-btn"
+                                        data-tip="Xóa bài viết"
+                                        onclick="deleteNews(@tt.MaTT)">
+                                    <i class="bi bi-trash3-fill"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="5" class="empty-row">Chưa có bài viết nào.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- ✅ PAGINATION: giữ search + pageSize -->
+    <div class="pagination-box">
+        @if (ViewBag.TotalPage > 1)
+        {
+            <ul class="pagination">
+                <li class="@(ViewBag.Page == 1 ? "disabled" : "")">
+                    <a href="?page=@(ViewBag.Page - 1)&search=@ViewBag.Search&pageSize=@ViewBag.PageSize">‹</a>
+                </li>
+
+                @for (int i = 1; i <= ViewBag.TotalPage; i++)
+                {
+                    <li class="@(i == ViewBag.Page ? "active" : "")">
+                        <a href="?page=@i&search=@ViewBag.Search&pageSize=@ViewBag.PageSize">@i</a>
+                    </li>
+                }
+
+                <li class="@(ViewBag.Page == ViewBag.TotalPage ? "disabled" : "")">
+                    <a href="?page=@(ViewBag.Page + 1)&search=@ViewBag.Search&pageSize=@ViewBag.PageSize">›</a>
+                </li>
+            </ul>
+        }
+    </div>
+</div>
+
+<!-- ===================== MODAL XEM ===================== -->
+<div id="viewModal" class="modal-bg" style="display:none;">
+    <div class="modal-box modal-animate">
+        <div class="modal-header-flex">
+            <h3 class="modal-title">Chi tiết bài viết</h3>
+            <button class="btn-close-modal" onclick="hideModal('#viewModal')">×</button>
+        </div>
+
+        <div class="view-header">
+            <div>
+                <p class="view-order-code">Mã tin: <b id="v_MaTT"></b></p>
+                <p class="view-date">Ngày tạo: <span id="v_NgayTao"></span></p>
+            </div>
+        </div>
+
+        <div class="od-card">
+            <h4 class="card-title">Tên trang</h4>
+            <p id="v_TenTrang" class="big-text"></p>
+        </div>
+
+        <div class="od-card mt-2">
+            <h4 class="card-title">Meta title</h4>
+            <code id="v_MetaTitle" class="meta-code"></code>
+        </div>
+
+        <div class="od-card mt-2">
+            <h4 class="card-title">Nội dung</h4>
+            <div id="v_NoiDung" class="content-box"></div>
+        </div>
+
+        <div class="footer-area">
+            <button class="btn-close-custom" onclick="hideModal('#viewModal')">Đóng</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== MODAL THÊM / SỬA ===================== -->
+<div id="formModal" class="modal-bg" style="display:none;">
+    <div class="modal-box modal-animate">
+        <div class="modal-header-flex">
+            <h3 class="modal-title" id="fm_title">Thêm bài viết</h3>
+            <button class="btn-close-modal" onclick="hideModal('#formModal')">×</button>
+        </div>
+
+        <input type="hidden" id="fm_mode" value="create" />
+        <input type="hidden" id="fm_MaTT" value="0" />
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Tên trang <span class="text-red">*</span></label>
+                <input type="text" id="fm_TenTrang" class="form-control"
+                       placeholder="Nhập tên trang..." />
+            </div>
+
+            <div class="form-group">
+                <label>Meta title <span class="text-red">*</span></label>
+                <input type="text" id="fm_MetaTitle" class="form-control"
+                       placeholder="vd: gioi-thieu" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Nội dung</label>
+            <textarea id="fm_NoiDung" rows="10"></textarea>
+        </div>
+
+        <div class="footer-area">
+            <button class="btn-save" onclick="saveNews()">
+                <i class="bi bi-check2"></i> Lưu
+            </button>
+            <button class="btn-close-custom" onclick="hideModal('#formModal')">Hủy</button>
+        </div>
+    </div>
+</div>
+
+@section scripts{
+    <script>
+        // ===================== MODAL OPEN/CLOSE =====================
+        function showModal(selector) {
+            $(selector).addClass("active-bg");
+            $(selector).find(".modal-box").addClass("active");
+        }
+        function hideModal(selector) {
+            $(selector).removeClass("active-bg");
+            $(selector).find(".modal-box").removeClass("active");
+        }
+
+        // ✅ Enter trong search sẽ submit form GET
+        $("#searchBox").keypress(function (e) {
+            if (e.which === 13) $(this).closest("form").submit();
+        });
+
+        // ===================== CKEDITOR INIT =====================
+        var editorInstance = null;
+
+        function initEditorOnce() {
+            if (editorInstance) return;
+
+            editorInstance = CKEDITOR.replace("fm_NoiDung", {
+                language: "vi",
+                height: 360,
+                allowedContent: true,
+                extraAllowedContent: '*(*);*{*}',
+                toolbar: [
+                    { name: 'document', items: ['Source', '-', 'Preview', 'Print'] },
+                    { name: 'clipboard', items: ['Cut', 'Copy', 'Paste', 'PasteText', 'PasteFromWord', '-', 'Undo', 'Redo'] },
+                    { name: 'editing', items: ['Find', 'Replace', '-', 'SelectAll'] },
+                    '/',
+                    { name: 'basicstyles', items: ['Bold', 'Italic', 'Underline', 'Strike', 'Subscript', 'Superscript', '-', 'RemoveFormat'] },
+                    {
+                        name: 'paragraph',
+                        items: [
+                            'NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'Blockquote',
+                            '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock'
+                        ]
+                    },
+                    { name: 'links', items: ['Link', 'Unlink', 'Anchor'] },
+                    { name: 'insert', items: ['Image', 'Table', 'HorizontalRule', 'SpecialChar'] },
+                    '/',
+                    { name: 'styles', items: ['Styles', 'Format', 'Font', 'FontSize'] },
+                    { name: 'colors', items: ['TextColor', 'BGColor'] },
+                    { name: 'tools', items: ['Maximize', 'ShowBlocks'] },
+                ],
+                filebrowserBrowseUrl: '/ckfinder/ckfinder.html',
+                filebrowserImageBrowseUrl: '/ckfinder/ckfinder.html?type=Images',
+                filebrowserFlashBrowseUrl: '/ckfinder/ckfinder.html?type=Flash',
+                filebrowserUploadUrl: '/ckfinder/core/connector/aspx/connector.aspx?command=QuickUpload&type=Files',
+                filebrowserImageUploadUrl: '/ckfinder/core/connector/aspx/connector.aspx?command=QuickUpload&type=Images',
+                filebrowserFlashUploadUrl: '/ckfinder/core/connector/aspx/connector.aspx?command=QuickUpload&type=Flash'
+            });
+        }
+
+        function setEditorContent(html) {
+            initEditorOnce();
+            editorInstance.setData(html || "");
+        }
+
+        function getEditorContent() {
+            initEditorOnce();
+            return editorInstance.getData();
+        }
+
+        // ===================== VIEW =====================
+        function viewNews(id) {
+            $.get("/Admin/TinTuc/Details", { id }, function (res) {
+                if (!res || !res.success) {
+                    Swal.fire("Lỗi!", res?.message || "Không tải được chi tiết!", "error");
+                    return;
+                }
+                var o = res.data;
+                $("#v_MaTT").text(o.MaTTText);
+                $("#v_NgayTao").text(o.NgayTao);
+                $("#v_TenTrang").text(o.TenTrang);
+                $("#v_MetaTitle").text(o.MetaTitle);
+                $("#v_NoiDung").html(o.NoiDung || "<i>(Chưa có nội dung)</i>");
+                showModal("#viewModal");
+            });
+        }
+
+        // ===================== OPEN CREATE =====================
+        function openCreateModal() {
+            $("#fm_mode").val("create");
+            $("#fm_title").text("Thêm bài viết");
+            $("#fm_MaTT").val(0);
+            $("#fm_TenTrang").val("");
+            $("#fm_MetaTitle").val("");
+
+            showModal("#formModal");
+
+            setTimeout(function () {
+                initEditorOnce();
+                setEditorContent("");
+                editorInstance.resize('100%', 360);
+                $("#fm_TenTrang").focus();
+            }, 150);
+        }
+
+        // ===================== OPEN EDIT =====================
+        function openEditModal(id) {
+            $.get("/Admin/TinTuc/Details", { id }, function (res) {
+                if (!res || !res.success) {
+                    Swal.fire("Lỗi!", res?.message || "Không tải được dữ liệu!", "error");
+                    return;
+                }
+                var o = res.data;
+                $("#fm_mode").val("edit");
+                $("#fm_title").text("Sửa bài viết");
+                $("#fm_MaTT").val(o.MaTT);
+                $("#fm_TenTrang").val(o.TenTrang);
+                $("#fm_MetaTitle").val(o.MetaTitle);
+
+                showModal("#formModal");
+
+                setTimeout(function () {
+                    initEditorOnce();
+                    setEditorContent(o.NoiDung || "");
+                    editorInstance.resize('100%', 360);
+                }, 150);
+            });
+        }
+
+        // ===================== SAVE =====================
+        function saveNews() {
+            var mode = $("#fm_mode").val();
+            var data = {
+                MaTT: $("#fm_MaTT").val(),
+                TenTrang: $("#fm_TenTrang").val().trim(),
+                MetaTitle: $("#fm_MetaTitle").val().trim(),
+                NoiDung: getEditorContent()
+            };
+
+            if (!data.TenTrang) {
+                Swal.fire("Thiếu thông tin!", "Vui lòng nhập Tên trang.", "warning");
+                return;
+            }
+            if (!data.MetaTitle) {
+                Swal.fire("Thiếu thông tin!", "Vui lòng nhập Meta title.", "warning");
+                return;
+            }
+
+            var url = mode === "edit"
+                ? "/Admin/TinTuc/EditAjax"
+                : "/Admin/TinTuc/CreateAjax";
+
+            $.ajax({
+                url: url,
+                type: "POST",
+                data: data,
+                success: function (res) {
+                    if (res && res.success) {
+                        Swal.fire("Thành công!", res.message, "success")
+                            .then(() => location.reload());
+                    } else {
+                        Swal.fire("Lỗi!", res?.message || "Không lưu được!", "error");
+                    }
+                },
+                error: function () {
+                    Swal.fire("Lỗi!", "Server lỗi khi lưu!", "error");
+                }
+            });
+        }
+
+        // ===================== DELETE =====================
+        function deleteNews(id) {
+            Swal.fire({
+                title: "Xóa bài viết?",
+                text: "Bạn có chắc muốn xóa bài viết này không?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#E76F51",
+                cancelButtonColor: "#6c757d",
+                confirmButtonText: "Xóa",
+                cancelButtonText: "Hủy"
+            }).then((result) => {
+                if (!result.isConfirmed) return;
+
+                $.post("/Admin/TinTuc/Delete", { id }, function (res) {
+                    if (res && res.success) {
+                        Swal.fire("Đã xóa!", res.message, "success")
+                            .then(() => location.reload());
+                    } else {
+                        Swal.fire("Lỗi!", res?.message || "Không thể xóa!", "error");
+                    }
+                });
+            });
+        }
+    </script>
+}

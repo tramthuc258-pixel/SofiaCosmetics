@@ -1,0 +1,141 @@
+﻿@model SofiaCosmetics.Models.TINTUC
+@using System.Web
+@using System.Text.RegularExpressions
+@using System.Linq
+@using System.Collections.Generic
+<link href="~/Content/dieukhoansudung.css" rel="stylesheet" />
+@{
+    var pageTitle = Model?.TenTrang ?? "Điều khoản sử dụng";
+    ViewBag.Title = pageTitle;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    string rawHtml = HttpUtility.HtmlDecode(Model?.NoiDung ?? "");
+
+    Func<string, string> StripHtml = s =>
+string.IsNullOrWhiteSpace(s) ? "" : Regex.Replace(s, "<[^>]*>", "").Trim();
+
+    Func<string, string> Norm = s =>
+        (s ?? "").Replace("\r\n", "\n").Replace("\r", "\n").Trim();
+
+    Func<string, List<string>> SplitBlocks = s =>
+    {
+        var t = Norm(StripHtml(s));
+        if (string.IsNullOrWhiteSpace(t)) return new List<string>();
+        t = Regex.Replace(t, @"^\s*---\s*$", "\n---\n", RegexOptions.Multiline);
+        return Regex.Split(t, @"(?:^|\n)\s*---\s*(?:\n|$)")
+                    .Select(b => b.Trim())
+                    .Where(b => !string.IsNullOrWhiteSpace(b))
+                    .ToList();
+    };
+
+    bool hasSeparator = Regex.IsMatch(Norm(StripHtml(rawHtml)), @"(?:^|\n)\s*---\s*(?:\n|$)");
+
+    Func<List<string>, List<(string title, string desc)>> ParsePairList = lines =>
+    {
+        var res = new List<(string, string)>();
+        foreach (var ln in lines)
+        {
+            var s = ln.Trim();
+            s = Regex.Replace(s, @"^\d+\.\s*", "");
+            s = Regex.Replace(s, @"^-\s*", "");
+            if (string.IsNullOrWhiteSpace(s)) continue;
+
+            var parts = s.Split(new[] { "|" }, 2, System.StringSplitOptions.None)
+                         .Select(p => p.Trim()).ToArray();
+
+            var title = parts.ElementAtOrDefault(0) ?? "";
+            var desc = parts.ElementAtOrDefault(1) ?? "";
+            if (!string.IsNullOrWhiteSpace(title))
+                res.Add((title, desc));
+        }
+        return res;
+    };
+
+    var blocks = hasSeparator ? SplitBlocks(rawHtml) : new List<string>();
+
+    var heroLines = blocks.ElementAtOrDefault(0) != null
+        ? Norm(blocks[0]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+
+    string heroTitle = heroLines.ElementAtOrDefault(0) ?? "ĐIỀU KHOẢN SỬ DỤNG";
+    string heroDesc = heroLines.ElementAtOrDefault(1) ?? "Khi truy cập và mua sắm tại SofiaCosmetics, bạn đồng ý tuân thủ các điều khoản dưới đây để đảm bảo quyền lợi của cả hai bên.";
+    string heroNote = heroLines.ElementAtOrDefault(2) ?? "Vui lòng đọc kỹ để đảm bảo quyền lợi của bạn.";
+
+    var cardLines = blocks.ElementAtOrDefault(1) != null
+        ? Norm(blocks[1]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+    var cards = ParsePairList(cardLines);
+    if (cards.Count == 0)
+    {
+        cards = new List<(string, string)>{
+            ("Quyền & trách nhiệm","Mỗi bên cần tuân thủ đúng quyền hạn và trách nhiệm khi mua bán."),
+            ("Nội dung & bản quyền","Thông tin/ảnh trên web thuộc quyền sở hữu của SofiaCosmetics."),
+            ("Giới hạn sử dụng","Không dùng web cho mục đích gian lận, phá hoại, spam.")
+        };
+    }
+    var cardIcons = new[] { "bi-people-fill", "bi-file-earmark-lock2-fill", "bi-shield-exclamation" };
+
+    var secLines = blocks.ElementAtOrDefault(2) != null
+        ? Norm(blocks[2]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+    var sections = ParsePairList(secLines);
+    if (sections.Count == 0)
+    {
+        sections = new List<(string, string)>{
+            ("1. Phạm vi áp dụng","Điều khoản áp dụng cho mọi khách hàng truy cập, đặt mua sản phẩm hoặc sử dụng dịch vụ tại SofiaCosmetics."),
+            ("2. Tài khoản & thông tin cung cấp","Bạn cam kết cung cấp thông tin chính xác khi đặt hàng. SofiaCosmetics không chịu trách nhiệm nếu thông tin sai dẫn đến giao hàng thất bại."),
+            ("3. Quy trình mua hàng","Đơn hàng chỉ được xác nhận khi hệ thống/nhân viên SofiaCosmetics liên hệ xác nhận thành công."),
+            ("4. Giá cả & khuyến mãi","Giá niêm yết có thể thay đổi theo chương trình. Khuyến mãi áp dụng theo từng thời điểm và điều kiện cụ thể."),
+            ("5. Nghĩa vụ của khách hàng","Không tạo đơn ảo, không spam, không lợi dụng chính sách đổi trả hoặc khuyến mãi gây thiệt hại cho shop."),
+            ("6. Nghĩa vụ của SofiaCosmetics","Cam kết bán hàng chính hãng, minh bạch nguồn gốc, hỗ trợ tư vấn và xử lý khiếu nại hợp lý."),
+            ("7. Giới hạn trách nhiệm","SofiaCosmetics không chịu trách nhiệm với các trường hợp bất khả kháng như thiên tai, gián đoạn vận chuyển, lỗi hệ thống ngoài kiểm soát."),
+            ("8. Thay đổi điều khoản","Điều khoản có thể được cập nhật mà không cần báo trước. Phiên bản mới sẽ có hiệu lực ngay khi đăng tải.")
+        };
+    }
+
+    var footLines = blocks.ElementAtOrDefault(3) != null
+        ? Norm(blocks[3]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+    string footNote = footLines.FirstOrDefault()
+        ?? "SofiaCosmetics cảm ơn bạn đã tin tưởng. Mọi thắc mắc vui lòng liên hệ để được hỗ trợ nhanh nhất 💗";
+}
+
+<div class="sf-static container">
+    <h2 class="sf-static__title">@(Model?.TenTrang ?? "Điều khoản sử dụng")</h2>
+    <div class="sf-static__line"></div>
+
+    <section class="term-hero">
+        <div class="term-hero__badge"><i class="bi bi-journal-check"></i></div>
+        <h1 class="term-hero__title">@heroTitle</h1>
+        <p class="term-hero__desc">@heroDesc</p>
+        <div class="term-hero__note">@heroNote</div>
+    </section>
+
+    <section class="term-cards">
+        @for (int i = 0; i < cards.Count; i++)
+        {
+            var c = cards[i];
+            var icon = cardIcons.ElementAtOrDefault(i) ?? "bi-stars";
+            <div class="term-card">
+                <div class="term-card__icon"><i class="bi @icon"></i></div>
+                <h3>@c.title</h3>
+                <p>@c.desc</p>
+            </div>
+        }
+    </section>
+
+    <section class="term-section">
+        <div class="term-grid-2">
+            @for (int i = 0; i < sections.Count; i++)
+            {
+                var s = sections[i];
+                <div class="term-box">
+                    <h3 class="term-box__title">@s.title</h3>
+                    <p class="term-box__desc">@s.desc</p>
+                </div>
+            }
+        </div>
+    </section>
+
+    <div class="term-footer">@footNote</div>
+</div>

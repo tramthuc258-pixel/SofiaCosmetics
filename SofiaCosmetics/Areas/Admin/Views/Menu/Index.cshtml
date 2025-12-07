@@ -1,0 +1,363 @@
+﻿@model IEnumerable<SofiaCosmetics.Models.AdminModels.AdminMenu>
+@section styles{
+    <link href="~/Content/admin-menu.css" rel="stylesheet" />
+}
+@{
+    ViewBag.Title = "Quản lý menu";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+
+    var parents = ViewBag.MenuParent as IEnumerable<SofiaCosmetics.Models.MENU>;
+}
+
+<div class="top-action-bar">
+    <h2 class="page-title">Quản lý menu</h2>
+
+    <div class="search-area">
+        <input type="text" id="searchMenu" placeholder="Tìm kiếm menu..." value="@ViewBag.Search" />
+        <button class="btn-search" id="btnSearchMenu">
+            <i class="bi bi-search"></i>
+        </button>
+        <a href="/Admin/Menu" class="btn-reset">
+            <i class="bi bi-arrow-clockwise"></i>
+        </a>
+    </div>
+
+    <div class="action-buttons">
+        <button class="btn-add" onclick="openAddMenu()">
+            <i class="bi bi-ui-checks-grid"></i> Thêm menu
+        </button>
+    </div>
+</div>
+
+<!-- TABLE CARD -->
+<div class="table-card">
+    <table class="table-main">
+        <thead>
+            <tr>
+                <th>Mã menu</th>
+                <th>Tên menu</th>
+                <th>Link</th>
+                <th>Menu cha</th>
+                <th class="actions-head">Thao tác</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                foreach (var m in Model)
+                {
+                    <tr>
+                        <td class="code-cell">@($"MD{m.Id:000}")</td>
+
+                        <td class="name-cell">
+                            <div class="avatar-circle">
+                                @(string.IsNullOrEmpty(m.MenuName) ? "?" : m.MenuName.Trim()[0].ToString().ToUpper())
+                            </div>
+                            <span>@m.MenuName</span>
+                        </td>
+
+                        <td>@m.MenuLink</td>
+                        <td>@(string.IsNullOrEmpty(m.ParentName) ? "—" : m.ParentName)</td>
+
+                        <td class="actions">
+                            <button class="btn-view btn-icon tooltip-btn"
+                                    data-tip="Xem chi tiết"
+                                    onclick="viewMenu(@m.Id)">
+                                <i class="bi bi-file-earmark-text-fill"></i>
+                            </button>
+
+                            <button class="btn-edit btn-icon tooltip-btn"
+                                    data-tip="Sửa menu"
+                                    onclick="editMenu(@m.Id)">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+
+                            <button class="btn-delete btn-icon tooltip-btn"
+                                    data-tip="Xóa menu"
+                                    onclick="deleteMenu(@m.Id)">
+                                <i class="bi bi-trash3-fill"></i>
+                            </button>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="5" class="empty-row">Chưa có menu nào.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="pagination-box">
+        @if (ViewBag.TotalPage > 1)
+        {
+            <ul class="pagination">
+                <li class="@(ViewBag.Page == 1 ? "disabled" : "")">
+                    <a href="?page=@(ViewBag.Page - 1)&search=@ViewBag.Search">‹</a>
+                </li>
+
+                @for (int i = 1; i <= ViewBag.TotalPage; i++)
+                {
+                    <li class="@(i == ViewBag.Page ? "active" : "")">
+                        <a href="?page=@i&search=@ViewBag.Search">@i</a>
+                    </li>
+                }
+
+                <li class="@(ViewBag.Page == ViewBag.TotalPage ? "disabled" : "")">
+                    <a href="?page=@(ViewBag.Page + 1)&search=@ViewBag.Search">›</a>
+                </li>
+            </ul>
+        }
+    </div>
+</div>
+
+
+<!-- ================= MODAL THÊM MENU ================= -->
+<div id="addMenuModal" class="modal-bg" style="display:none;">
+    <div class="modal-box modal-animate">
+        <div class="modal-header-flex">
+            <h3 class="modal-title">Thêm menu mới</h3>
+            <button class="btn-close-modal" onclick="hideModal('#addMenuModal')">×</button>
+        </div>
+
+        <div class="input-group">
+            <i class="bi bi-card-text"></i>
+            <input id="add_MenuName" class="form-input" placeholder="Tên menu..." />
+        </div>
+
+        <div class="input-group">
+            <i class="bi bi-link-45deg"></i>
+            <input id="add_MenuLink" class="form-input" placeholder="Đường dẫn (vd: /products)..." />
+        </div>
+
+        <label class="mt-2">Menu cha:</label>
+        <select id="add_ParentId" class="form-select">
+            <option value="">— Chọn menu cha —</option>
+            @if (parents != null)
+            {
+                foreach (var p in parents)
+                {
+                    <option value="@p.Id">@p.MenuName</option>
+                }
+            }
+        </select>
+
+        <div class="footer-area">
+            <button class="btn-save" onclick="saveAddMenu()">Lưu</button>
+            <button class="btn-close-custom" onclick="hideModal('#addMenuModal')">Đóng</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- ================= MODAL SỬA MENU ================= -->
+<div id="editMenuModal" class="modal-bg" style="display:none;">
+    <div class="modal-box modal-animate">
+        <div class="modal-header-flex">
+            <h3 class="modal-title">Sửa menu</h3>
+            <button class="btn-close-modal" onclick="hideModal('#editMenuModal')">×</button>
+        </div>
+
+        <input type="hidden" id="edit_Id" />
+
+        <div class="input-group">
+            <i class="bi bi-card-text"></i>
+            <input id="edit_MenuName" class="form-input" placeholder="Tên menu..." />
+        </div>
+
+        <div class="input-group">
+            <i class="bi bi-link-45deg"></i>
+            <input id="edit_MenuLink" class="form-input" placeholder="Đường dẫn..." />
+        </div>
+
+        <label class="mt-2">Menu cha:</label>
+        <select id="edit_ParentId" class="form-select">
+            <option value="">— Không có menu cha —</option>
+            @if (parents != null)
+            {
+                foreach (var p in parents)
+                {
+                    <option value="@p.Id">@p.MenuName</option>
+                }
+            }
+        </select>
+
+        <div class="footer-area">
+            <button class="btn-save" onclick="saveEditMenu()">Lưu</button>
+            <button class="btn-close-custom" onclick="hideModal('#editMenuModal')">Đóng</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- ================= MODAL XEM MENU ================= -->
+<div id="viewMenuModal" class="modal-bg" style="display:none;">
+    <div class="modal-box modal-animate">
+        <div class="modal-header-flex">
+            <h3 class="modal-title">Thông tin menu</h3>
+            <button class="btn-close-modal" onclick="hideModal('#viewMenuModal')">×</button>
+        </div>
+
+        <div class="view-avatar" id="v_MenuAvatar">M</div>
+
+        <div class="view-info">
+            <p><b>Tên menu:</b> <span id="v_MenuName"></span></p>
+            <p><b>Link:</b> <span id="v_MenuLink"></span></p>
+            <p><b>Menu cha:</b> <span id="v_ParentName"></span></p>
+        </div>
+
+        <div class="footer-area">
+            <button class="btn-close-custom" onclick="hideModal('#viewMenuModal')">Đóng</button>
+        </div>
+    </div>
+</div>
+
+
+@section scripts {
+    <script>
+        // ===== MODAL UTIL =====
+        function showModal(selector) {
+            $(selector).addClass("active-bg");
+            $(selector).find(".modal-box").addClass("active");
+        }
+        function hideModal(selector) {
+            $(selector).removeClass("active-bg");
+            $(selector).find(".modal-box").removeClass("active");
+        }
+
+        // ===== OPEN ADD =====
+        function openAddMenu() {
+            $("#add_MenuName").val("");
+            $("#add_MenuLink").val("");
+            $("#add_ParentId").val("");
+            showModal("#addMenuModal");
+            setTimeout(() => $("#add_MenuName").focus(), 100);
+        }
+
+        // ===== SAVE ADD =====
+        function saveAddMenu() {
+            const data = {
+                MenuName: $("#add_MenuName").val().trim(),
+                MenuLink: $("#add_MenuLink").val().trim(),
+                ParentId: $("#add_ParentId").val() === "" ? null : parseInt($("#add_ParentId").val())
+            };
+
+            if (!data.MenuName) {
+                Swal.fire("Thiếu thông tin!", "Vui lòng nhập tên menu!", "warning");
+                return;
+            }
+
+            $.ajax({
+                url: "/Admin/Menu/Add",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(data),
+                success: function (res) {
+                    if (res === true) {
+                        Swal.fire("Thành công!", "Đã thêm menu mới.", "success")
+                            .then(() => location.reload());
+                    } else {
+                        Swal.fire("Lỗi!", "Không thể thêm menu!", "error");
+                    }
+                }
+            });
+        }
+
+        // ===== EDIT GET =====
+        function editMenu(id) {
+            $.get("/Admin/Menu/Get/" + id, function (data) {
+                if (!data) return;
+
+                $("#edit_Id").val(data.Id);
+                $("#edit_MenuName").val(data.MenuName);
+                $("#edit_MenuLink").val(data.MenuLink);
+                $("#edit_ParentId").val(data.ParentId == null ? "" : data.ParentId.toString());
+
+                showModal("#editMenuModal");
+                setTimeout(() => $("#edit_MenuName").focus(), 80);
+            });
+        }
+
+        // ===== SAVE EDIT =====
+        function saveEditMenu() {
+            const data = {
+                Id: $("#edit_Id").val(),
+                MenuName: $("#edit_MenuName").val().trim(),
+                MenuLink: $("#edit_MenuLink").val().trim(),
+                ParentId: $("#edit_ParentId").val() === "" ? null : parseInt($("#edit_ParentId").val())
+            };
+
+            if (!data.MenuName) {
+                Swal.fire("Thiếu thông tin!", "Vui lòng nhập tên menu!", "warning");
+                return;
+            }
+
+            $.ajax({
+                url: "/Admin/Menu/Edit",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(data),
+                success: function (res) {
+                    if (res === true) {
+                        Swal.fire("Thành công!", "Đã cập nhật menu.", "success")
+                            .then(() => location.reload());
+                    } else {
+                        Swal.fire("Lỗi!", "Không thể cập nhật menu!", "error");
+                    }
+                }
+            });
+        }
+
+        // ===== DELETE =====
+        function deleteMenu(id) {
+            Swal.fire({
+                title: "Xóa menu?",
+                text: "Bạn có chắc muốn xóa menu này không?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#E76F51",
+                cancelButtonColor: "#6c757d",
+                confirmButtonText: "Xóa",
+                cancelButtonText: "Hủy"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post("/Admin/Menu/Delete", { id }, function (res) {
+                        if (res === true) {
+                            Swal.fire("Đã xóa!", "Menu đã được xóa.", "success")
+                                .then(() => location.reload());
+                        } else {
+                            Swal.fire("Lỗi!", "Không thể xóa menu!", "error");
+                        }
+                    });
+                }
+            });
+        }
+
+        // ===== VIEW DETAIL =====
+        function viewMenu(id) {
+            $.get("/Admin/Menu/Details/" + id, function (data) {
+                if (!data) return;
+
+                $("#v_MenuName").text(data.MenuName);
+                $("#v_MenuLink").text(data.MenuLink);
+                $("#v_ParentName").text(data.Parent || "—");
+
+                const firstLetter = data.MenuName ? data.MenuName.trim()[0].toUpperCase() : "?";
+                $("#v_MenuAvatar").text(firstLetter);
+
+                showModal("#viewMenuModal");
+            });
+        }
+
+        // ===== SEARCH =====
+        $("#btnSearchMenu").click(function () {
+            let kw = $("#searchMenu").val().trim();
+            window.location.href = "/Admin/Menu?search=" + encodeURIComponent(kw);
+        });
+        $("#searchMenu").keypress(function (e) {
+            if (e.which === 13) $("#btnSearchMenu").click();
+        });
+    </script>
+}

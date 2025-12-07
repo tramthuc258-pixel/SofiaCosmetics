@@ -1,0 +1,170 @@
+﻿@model SofiaCosmetics.Models.AdminModels.AdminAnalyticsVM
+@section styles{
+    <link href="~/Content/admin-phantich.css" rel="stylesheet" />
+}
+@{
+    ViewBag.Title = "Phân tích";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<div class="analytics-page">
+    <h2 class="page-title">Phân tích tổng quan</h2>
+
+    <div class="summary-grid">
+        <div class="summary-card yellow">
+            <div class="label">Doanh thu</div>
+            <div class="value" id="sumRevenue">@Model.TongDoanhThu.ToString("N0") đ</div>
+        </div>
+        <div class="summary-card teal">
+            <div class="label">Khách hàng</div>
+            <div class="value" id="sumCustomer">@Model.TongKhachHang</div>
+        </div>
+        <div class="summary-card orange">
+            <div class="label">Đơn hàng</div>
+            <div class="value" id="sumOrder">@Model.TongDonHang</div>
+        </div>
+        <div class="summary-card cyan">
+            <div class="label">Sản phẩm</div>
+            <div class="value" id="sumProduct">@Model.TongSanPham</div>
+        </div>
+    </div>
+
+    <div class="chart-grid">
+        <div class="chart-card">
+            <h3>Tăng trưởng doanh thu</h3>
+            <canvas id="revenueChart" height="110"></canvas>
+        </div>
+
+        <div class="chart-card">
+            <h3>Bán hàng theo danh mục</h3>
+            <canvas id="categoryChart" height="110"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js CDN (đặt TRƯỚC script init) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    let revenueChart = null;
+    let categoryChart = null;
+
+    // URLs chuẩn theo Area
+    const urlRevenue  = '@Url.Action("GetRevenueByMonth", "PhanTich", new { area="Admin" })?months=6';
+    const urlCategory = '@Url.Action("GetSalesByCategory", "PhanTich", new { area="Admin" })';
+    const urlSummary  = '@Url.Action("GetSummary", "PhanTich", new { area="Admin" })';
+
+    function formatMoney(v){
+        return Number(v || 0).toLocaleString("vi-VN") + " đ";
+    }
+
+    function initRevenueChart(labels, values){
+        const ctx = document.getElementById("revenueChart");
+        revenueChart = new Chart(ctx, {
+            type: "line",
+            data: {
+                labels,
+                datasets: [{
+                    label: "Doanh thu",
+                    data: values,
+                    fill: true,
+                    tension: 0.35
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { callback: v => v.toLocaleString("vi-VN")+"đ" }
+                    }
+                }
+            }
+        });
+    }
+
+    function initCategoryChart(labels, values){
+        const ctx = document.getElementById("categoryChart");
+        categoryChart = new Chart(ctx, {
+            type: "doughnut",
+            data: {
+                labels,
+                datasets: [{ data: values }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: "bottom" } }
+            }
+        });
+    }
+
+    async function loadRevenue(){
+        try{
+            const res = await fetch(urlRevenue);
+            const data = await res.json();
+
+            console.log("Revenue API:", data);
+
+            const labels = data.map(x => x.Thang);
+            const values = data.map(x => x.DoanhThu);
+
+            if(!revenueChart) initRevenueChart(labels, values);
+            else{
+                revenueChart.data.labels = labels;
+                revenueChart.data.datasets[0].data = values;
+                revenueChart.update();
+            }
+        }catch(err){
+            console.error("Revenue lỗi:", err);
+        }
+    }
+
+    async function loadCategory(){
+        try{
+            const res = await fetch(urlCategory);
+            const data = await res.json();
+
+            console.log("Category API:", data);
+
+            const labels = data.map(x => x.TenDM);
+            const values = data.map(x => x.TyLe);
+
+            if(!categoryChart) initCategoryChart(labels, values);
+            else{
+                categoryChart.data.labels = labels;
+                categoryChart.data.datasets[0].data = values;
+                categoryChart.update();
+            }
+        }catch(err){
+            console.error("Category lỗi:", err);
+        }
+    }
+
+    async function loadSummary(){
+        try{
+            const res = await fetch(urlSummary);
+            const s = await res.json();
+
+            console.log("Summary API:", s);
+
+            document.getElementById("sumRevenue").innerText  = formatMoney(s.TongDoanhThu);
+            document.getElementById("sumCustomer").innerText = s.TongKhachHang;
+            document.getElementById("sumOrder").innerText    = s.TongDonHang;
+            document.getElementById("sumProduct").innerText  = s.TongSanPham;
+        }catch(err){
+            console.error("Summary lỗi:", err);
+        }
+    }
+
+    async function refreshDashboard(){
+        await loadSummary();
+        await loadRevenue();
+        await loadCategory();
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        refreshDashboard();
+        setInterval(refreshDashboard, 30000);
+    });
+</script>

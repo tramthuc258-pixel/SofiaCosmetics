@@ -1,0 +1,47 @@
+﻿/* ===== HEADER ===== */
+/*.header .bg-dark {
+    background-color: #0a0a23 !important;
+    font-size: 0.95rem;
+}
+
+    .header .bg-dark a:hover {
+        text-decoration: underline;
+    }
+
+.navbar-brand img {
+    max-height: 55px;
+}
+
+.badge {
+    font-size: 0.7rem;
+    border: 2px solid #fff;
+}
+
+form input:focus {
+    border-color: #0d6efd;
+    box-shadow: none;
+}*/
+
+/* Menu */
+/*.navbar-nav .nav-link {
+    font-weight: 500;
+    padding: 0.9rem 1rem;
+    transition: 0.3s;
+}
+
+    .navbar-nav .nav-link:hover,
+    .navbar-nav .nav-link.active {
+        color: #0d6efd;
+        border-bottom: 2px solid #0d6efd;
+    }*/
+
+/* Dropdown danh mục */
+/*.dropdown-menu {
+    border-radius: 0.5rem;
+    padding: 0.5rem 0;
+}
+
+.dropdown-item:hover {
+    background-color: #f0f8ff;
+    color: #0d6efd;
+}*/

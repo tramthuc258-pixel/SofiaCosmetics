@@ -1,0 +1,350 @@
+﻿
+/* ------ MAIN NAV BAR ------ */
+.main-nav {
+    background: #fdd9e5 !important;
+    border-bottom: 1px solid #f5c4d4;
+    padding: 0;
+}
+
+    .main-nav .navbar-nav .nav-link {
+        font-weight: 600;
+        color: #333;
+        padding: 16px 20px !important;
+        font-size: 15px;
+        text-transform: uppercase;
+        transition: 0.25s ease;
+    }
+
+    .main-nav .nav-link:hover,
+    .main-nav .nav-link:focus,
+    .main-nav .nav-link.active {
+        color: #ff4f91 !important;
+    }
+
+/*Khoang cach giua cac danh muc*/
+.navbar-nav {
+    gap: 75px !important;
+}
+
+/* Dropdown arrow */
+.navbar-nav .dropdown-toggle::after {
+    margin-left: 6px;
+    font-size: 12px;
+}
+
+/* ------ DROPDOWN MENU ------ */
+.dropdown-menu {
+    border-radius: 8px;
+    border: 1px solid #ffd0df;
+    padding: 0;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    min-width: 200px;
+}
+
+    .dropdown-menu .dropdown-item {
+        padding: 12px 18px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #444;
+    }
+
+        .dropdown-menu .dropdown-item:hover {
+            background: #ffe5ef;
+            color: #ff4f91;
+        }
+
+/* ------ SUBMENU (NESTED) ------ */
+.dropdown-submenu {
+    position: relative;
+}
+
+    .dropdown-submenu > a::after {
+        content: "›";
+        position: absolute;
+        right: 12px;
+        font-size: 14px;
+    }
+
+    .dropdown-submenu .dropdown-menu {
+        top: 0;
+        left: 100%;
+        margin-left: 3px;
+        border-radius: 8px;
+    }
+
+/* Hover submenu for PC */
+@media (min-width: 992px) {
+    .dropdown-submenu:hover > .dropdown-menu {
+        display: block;
+    }
+}
+
+/* ------ MOBILE FIX ------ */
+@media (max-width: 991px) {
+
+    .main-nav .navbar-nav .nav-link {
+        padding: 14px !important;
+        border-bottom: 1px solid #ffe3ee;
+    }
+
+    .dropdown-menu {
+        border: none;
+        box-shadow: none;
+    }
+
+    .dropdown-submenu > a::after {
+        content: "▼";
+        right: 12px;
+    }
+
+    .dropdown-submenu .dropdown-menu {
+        display: none;
+        margin-left: 0;
+        background: #ffedf4;
+        border-radius: 0;
+    }
+
+    .dropdown-submenu.show > .dropdown-menu {
+        display: block;
+    }
+}
+
+/* CATEGORY BUTTON */
+.btn-category {
+    background: #ff7fb0 !important;
+    color: #fff !important;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-weight: 600;
+}
+
+    .btn-category:hover {
+        background: #ff5b96 !important;
+    }
+
+.icon-menu {
+    width: 18px;
+}
+
+/* NAVBAR TOGGLER FIX */
+.navbar-toggler {
+    border: none;
+}
+
+    .navbar-toggler:focus {
+        box-shadow: none;
+    }
+
+.navbar-toggler-icon {
+    width: 26px;
+    height: 26px;
+}
+
+/* ANIMATION */
+@keyframes fadeDown {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fadeDown {
+    animation: fadeDown 0.25s ease;
+}
+
+/*trai time*/
+.header .navbar-cart .wishlist a,
+.header .navbar-cart .cart-items .main-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center; /* Căn giữa tuyệt đối ICON */
+    height: 40px;
+    width: 40px;
+    border-radius: 50%;
+    border: 2px solid #ffb6c1;
+    color: #ff91a4;
+    padding: 0;
+}
+
+/*logo*/
+.navbar-brand img {
+    height: 80px !important; /* tăng kích thước logo */
+    width: auto; /* giữ tỉ lệ chuẩn */
+}
+/* day là sua menu dmuc*/
+/* 🌸 Menu chữ đen – hover thành hồng */
+nav.main-nav .navbar-nav .nav-link {
+    color: #000 !important;
+    transition: 0.25s;
+}
+
+    nav.main-nav .navbar-nav .nav-link:hover,
+    nav.main-nav .navbar-nav .nav-link:focus {
+        color: #ff4f91 !important;
+    }
+/* 🌸 Dropdown đẹp – bo tròn – nền hồng nhạt */
+.main-nav .dropdown-menu {
+    background: #fffafc !important;
+    border: 1px solid #ffd0df !important;
+    border-radius: 12px !important;
+    padding: 8px 0 !important;
+    box-shadow: 0 6px 20px rgba(255, 192, 203, 0.35) !important;
+    min-width: 230px !important;
+}
+
+.main-nav .dropdown-item {
+    color: #444 !important;
+    padding: 10px 20px !important;
+    font-weight: 500;
+}
+
+    .main-nav .dropdown-item:hover {
+        background: #ffe5ef !important;
+        color: #ff4f91 !important;
+    }
+
+/* 🌸 Submenu ngang */
+.dropdown-submenu {
+    position: relative;
+}
+
+    .dropdown-submenu > a::after {
+        content: "›";
+        position: absolute;
+        right: 12px;
+        color: #777;
+    }
+
+    .dropdown-submenu .dropdown-menu {
+        left: 100%;
+        top: 0;
+        margin-left: 3px;
+        border-radius: 12px;
+    }
+
+    .dropdown-submenu > a:hover {
+        color: #ff4f91 !important;
+    }
+
+/* =======================
+   🌸 MENU MOBILE – CHỮ ĐEN → HOVER HỒNG
+   ======================= */
+@media (max-width: 991px) {
+
+    /* chữ menu mobile */
+    .main-nav .navbar-nav .nav-link {
+        color: #000 !important;
+        font-weight: 600;
+        transition: 0.25s;
+    }
+
+        /* hover hồng */
+        .main-nav .navbar-nav .nav-link:hover,
+        .main-nav .navbar-nav .nav-link:focus {
+            color: #ff4f91 !important;
+        }
+
+    /* dropdown mobile giữ nguyên */
+    .dropdown-menu {
+        background: #fff !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+    }
+}
+/* ================================
+   phân trang
+   ================================ */
+.pagination-container {
+    display: flex !important;
+    justify-content: center !important;
+    margin-top: 30px;
+}
+
+/* ép pagination nằm ngang thay vì dọc */
+.pagination {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px;
+    padding-left: 0 !important;
+}
+
+    /* li */
+    .pagination li {
+        list-style: none;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+        /* style chung cho nút */
+        .pagination li a,
+        .pagination li span {
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            width: 42px;
+            height: 42px;
+            background: #ffe6ee;
+            border: 2px solid #ffb6c1;
+            border-radius: 50%;
+            color: #ff6f91;
+            font-size: 15px;
+            font-weight: 500;
+            text-decoration: none !important;
+            transition: 0.25s ease;
+        }
+
+            /* hover đậm hơn */
+            .pagination li a:hover {
+                background-color: #ff6f91 !important;
+                border-color: #ff6f91 !important;
+                color: #fff !important;
+            }
+
+        /* nút đang active (trang hiện tại) */
+        .pagination li.active span {
+            background-color: #ff6f91 !important;
+            border-color: #ff6f91 !important;
+            color: #fff !important;
+            font-weight: 700 !important;
+            box-shadow: 0px 4px 12px rgba(255, 111, 145, 0.4);
+            transform: scale(1.15);
+        }
+
+        /* nút disabled */
+        .pagination li.disabled span,
+        .pagination li.disabled a {
+            opacity: 0.35;
+            background: #ffe6ee !important;
+            border-color: #ffb6c1 !important;
+            color: #ff9db3 !important;
+            pointer-events: none;
+        }
+        /* ACTIVE OVERRIDE — ĐÈ TẤT CẢ CSS KHÁC */
+        .pagination li.active span,
+        .pagination > .active > span,
+        .pagination > .active > span:hover,
+        .pagination > .active > a,
+        .pagination > .active > a:hover {
+            background-color: #ff6f91 !important;
+            border-color: #ff6f91 !important;
+            color: #fff !important;
+            font-weight: 700 !important;
+            transform: scale(1.18);
+            box-shadow: 0px 4px 14px rgba(255, 111, 145, 0.45);
+        }
+/* Giảm khoảng cách với sản phẩm */
+.pagination-container {
+    margin-top: 0 !important;
+    margin-bottom: 15px !important;
+    display: flex;
+    justify-content: center;
+}
+
+a:hover {
+    color: #ff6f91 !important;
+}

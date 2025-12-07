@@ -1,0 +1,78 @@
+﻿@{
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+
+    Func<string, string, string> isActive = (controller, action) =>
+    {
+        if (string.IsNullOrEmpty(action))
+            return currentController == controller ? "active" : "";
+
+        return (currentController == controller && currentAction == action) ? "active" : "";
+    };
+}
+
+<div class="sidebar">
+    <div class="sidebar-title">
+        🧴 Quản trị mỹ phẩm
+    </div>
+
+    <a href="@Url.Action("Index","TrangChu", new { area="Admin"})"
+       class="@isActive("TrangChu","Index")">
+        <i class="bi bi-layout-text-sidebar"></i> Bảng điều khiển
+    </a>
+
+    <a href="@Url.Action("Index","SanPham", new { area="Admin"})"
+       class="@isActive("SanPham","Index")">
+        <i class="bi bi-bag"></i> Sản phẩm
+    </a>
+
+    <a href="@Url.Action("Index","DonHang", new { area="Admin"})"
+       class="@isActive("DonHang","Index")">
+        <i class="bi bi-receipt"></i> Đơn hàng
+    </a>
+
+    <a href="@Url.Action("Index","KhachHang", new { area="Admin"})"
+       class="@isActive("KhachHang","Index")">
+        <i class="bi bi-people"></i> Khách hàng
+    </a>
+
+    <a href="@Url.Action("Index","Menu", new { area="Admin"})"
+       class="@isActive("Menu","Index")">
+        <i class="bi bi-grid"></i> Menu
+    </a>
+
+    <a href="@Url.Action("Index","ThuongHieu", new { area="Admin"})"
+       class="@isActive("ThuongHieu","Index")">
+        <i class="bi bi-shop"></i> Thương hiệu
+    </a>
+
+    <a href="@Url.Action("Index","KhuyenMai", new { area="Admin"})"
+       class="@isActive("KhuyenMai","Index")">
+        <i class="bi bi-tags"></i> Khuyến mãi
+    </a>
+
+    <a href="@Url.Action("Index","TinTuc", new { area="Admin"})"
+       class="@isActive("TinTuc","Index")">
+        <i class="bi bi-newspaper"></i> Tin tức
+    </a>
+
+    <a href="@Url.Action("Index","Slider", new { area="Admin"})"
+       class="@isActive("Slider","Index")">
+        <i class="bi bi-sliders"></i> Slider
+    </a>
+
+    <a href="@Url.Action("Index","PhanTich", new { area="Admin"})"
+       class="@isActive("PhanTich","Index")">
+        <i class="bi bi-bar-chart"></i> Phân tích
+    </a>
+
+    @*<a href="@Url.Action("Index","NoiDung", new { area="Admin"})"
+           class="@isActive("NoiDung","Index")">
+            <i class="bi bi-file-text"></i> Nội dung
+        </a>*@
+
+    @*<a href="@Url.Action("Index","CaiDat", new { area="Admin"})"
+           class="@isActive("CaiDat","Index")">
+            <i class="bi bi-gear"></i> Cài đặt
+        </a>*@
+</div>

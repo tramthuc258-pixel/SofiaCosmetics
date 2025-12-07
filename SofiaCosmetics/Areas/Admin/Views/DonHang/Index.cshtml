@@ -1,0 +1,406 @@
+﻿@model IEnumerable<SofiaCosmetics.Models.AdminModels.AdminOrderListVM>
+@section styles{
+    <link href="~/Content/admin-donhang.css" rel="stylesheet" />
+}
+@{
+    ViewBag.Title = "Quản lý đơn hàng";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+
+    int page = ViewBag.Page ?? 1;
+    int totalPage = ViewBag.TotalPage ?? 1;
+    int pageSize = ViewBag.PageSize ?? 5;
+    string search = ViewBag.Search as string ?? "";
+}
+
+<div class="top-action-bar">
+    <h2 class="page-title">Quản lý đơn hàng</h2>
+
+    <div class="search-area">
+        <input type="text" id="searchBox" placeholder="Tìm kiếm đơn hàng..."
+               value="@search" />
+        <button class="btn-search" id="btnSearch" type="button">
+            <i class="bi bi-search"></i>
+        </button>
+        <a href="/Admin/DonHang" class="btn-reset" title="Làm mới">
+            <i class="bi bi-arrow-clockwise"></i>
+        </a>
+    </div>
+
+    <div class="action-buttons">
+        <a href="/Admin/DonHang/ExportExcel" class="btn-excel">
+            <i class="bi bi-download"></i> Xuất Excel
+        </a>
+    </div>
+</div>
+
+<div class="order-card">
+    <table class="order-table">
+        <thead>
+            <tr>
+                <th>Mã ĐH</th>
+                <th>Khách hàng</th>
+                <th>Ngày đặt</th>
+                <th>Tổng tiền</th>
+                <th>Trạng thái</th>
+                <th class="actions-head">Thao tác</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                foreach (var dh in Model)
+                {
+                    var st = (dh.TrangThai ?? "").ToLower();
+                    string statusClass = "badge-status processing";
+
+                    if (st.Contains("đang giao") || st.Contains("dang giao"))
+                    {
+                        statusClass = "badge-status shipping";
+                    }
+                    else if (st.Contains("hoàn thành") || st.Contains("hoan thanh"))
+                    {
+                        statusClass = "badge-status completed";
+                    }
+                    else if (st.Contains("hủy") || st.Contains("huy"))
+                    {
+                        statusClass = "badge-status cancelled";
+                    }
+
+                    <tr>
+                        <td class="code-cell">@($"DH{dh.MaDH:000}")</td>
+                        <td>@dh.KhachHang</td>
+                        <td>@(dh.NgayDat.HasValue ? dh.NgayDat.Value.ToString("dd/MM/yyyy") : "")</td>
+                        <td>@String.Format("{0:n0} đ", dh.TongTien)</td>
+                        <td><span class="@statusClass">@dh.TrangThai</span></td>
+
+                        <td class="actions">
+                            <button class="btn-view btn-icon tooltip-btn"
+                                    data-tip="Xem chi tiết"
+                                    onclick="viewOrder(@dh.MaDH)">
+                                <i class="bi bi-file-earmark-text-fill"></i>
+                            </button>
+
+                            <button class="btn-edit btn-icon tooltip-btn"
+                                    data-tip="Sửa trạng thái"
+                                    onclick="editOrder(@dh.MaDH)">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+
+                            <button class="btn-delete btn-icon tooltip-btn"
+                                    data-tip="Xóa đơn hàng"
+                                    onclick="deleteOrder(@dh.MaDH)">
+                                <i class="bi bi-trash3-fill"></i>
+                            </button>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="6" class="empty-row">Chưa có đơn hàng nào.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- ===== PAGINATION ===== -->
+    <div class="pagination-box">
+        @if (totalPage > 1)
+        {
+            <ul class="pagination">
+
+                <!-- PREV -->
+                <li class="@(page == 1 ? "disabled" : "")">
+                    <a href="?page=@(page - 1)&search=@search&pageSize=@pageSize">‹</a>
+                </li>
+
+                @for (int i = 1; i <= totalPage; i++)
+                {
+                    <li class="@(i == page ? "active" : "")">
+                        <a href="?page=@i&search=@search&pageSize=@pageSize">@i</a>
+                    </li>
+                }
+
+                <!-- NEXT -->
+                <li class="@(page == totalPage ? "disabled" : "")">
+                    <a href="?page=@(page + 1)&search=@search&pageSize=@pageSize">›</a>
+                </li>
+            </ul>
+        }
+    </div>
+</div>
+
+
+<!-- ================= MODAL XEM ĐƠN ================= -->
+<div id="viewModal" class="modal-bg" style="display:none;">
+    <div class="modal-box modal-animate">
+        <div class="modal-header-flex">
+            <h3 class="modal-title">Chi tiết đơn hàng</h3>
+            <button class="btn-close-modal" onclick="hideModal('#viewModal')">×</button>
+        </div>
+
+        <div class="view-header">
+            <div>
+                <p class="view-order-code">Mã đơn: <b id="v_MaDH"></b></p>
+                <p class="view-date">Ngày đặt: <span id="v_NgayDat"></span></p>
+            </div>
+            <div>
+                <span id="v_TrangThai" class="badge-status processing"></span>
+            </div>
+        </div>
+
+        <div class="od-grid">
+            <div class="od-card customer-card">
+                <h4 class="card-title">Khách hàng</h4>
+                <div class="customer-body">
+                    <div class="avatar-circle" id="v_Avatar"></div>
+                    <div class="cust-info">
+                        <p><b id="v_KhachHang"></b></p>
+                        <p><i class="bi bi-envelope"></i> <span id="v_Email"></span></p>
+                        <p><i class="bi bi-telephone"></i> <span id="v_SDT"></span></p>
+                        <p><i class="bi bi-geo-alt"></i> <span id="v_DiaChi"></span></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="od-card summary-card">
+                <h4 class="card-title">Thanh toán</h4>
+                <div class="summary-body">
+                    <div class="sum-row total">
+                        <span>Tổng thanh toán</span>
+                        <span id="v_TongTien"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="od-card product-card">
+            <h4 class="card-title">Sản phẩm trong đơn</h4>
+            <table class="od-product-table">
+                <thead>
+                    <tr>
+                        <th>Sản phẩm</th>
+                        <th class="text-center">Đơn giá</th>
+                        <th class="text-center">Số lượng</th>
+                        <th class="text-right">Thành tiền</th>
+                    </tr>
+                </thead>
+                <tbody id="v_ProductBody"></tbody>
+            </table>
+        </div>
+
+        <div class="footer-area">
+            <button class="btn-close-custom" onclick="hideModal('#viewModal')">Đóng</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- ================= MODAL SỬA TRẠNG THÁI ================= -->
+<div id="editModal" class="modal-bg" style="display:none;">
+    <div class="modal-box modal-animate">
+        <div class="modal-header-flex">
+            <h3 class="modal-title">Cập nhật trạng thái đơn hàng</h3>
+            <button class="btn-close-modal" onclick="hideModal('#editModal')">×</button>
+        </div>
+
+        <input type="hidden" id="edit_MaDH" />
+
+        <div class="edit-info">
+            <p><b>Mã đơn:</b> <span id="edit_MaDHText"></span></p>
+            <p><b>Khách hàng:</b> <span id="edit_KhachHang"></span></p>
+            <p><b>Ngày đặt:</b> <span id="edit_NgayDat"></span></p>
+            <p><b>Tổng tiền:</b> <span id="edit_TongTien"></span></p>
+        </div>
+
+        <label class="mt-2">Trạng thái:</label>
+        <div class="status-options">
+            <label class="status-item">
+                <input type="radio" name="status" value="Đang xử lý">
+                <span>🔄 Đang xử lý</span>
+            </label>
+            <label class="status-item">
+                <input type="radio" name="status" value="Đang giao">
+                <span>🚚 Đang giao</span>
+            </label>
+            <label class="status-item">
+                <input type="radio" name="status" value="Hoàn thành">
+                <span>✅ Hoàn thành</span>
+            </label>
+            <label class="status-item">
+                <input type="radio" name="status" value="Đã hủy">
+                <span>❌ Đã hủy</span>
+            </label>
+        </div>
+
+        <div class="footer-area">
+            <button class="btn-save" onclick="saveEdit()">Lưu</button>
+            <button class="btn-close-custom" onclick="hideModal('#editModal')">Đóng</button>
+        </div>
+    </div>
+</div>
+
+
+@section scripts{
+    <script>
+        // ===== MODAL HELPERS =====
+        function showModal(selector) {
+            $(selector).addClass("active-bg");
+            $(selector).find(".modal-box").addClass("active");
+        }
+        function hideModal(selector) {
+            $(selector).removeClass("active-bg");
+            $(selector).find(".modal-box").removeClass("active");
+        }
+
+        function formatMoney(num) {
+            return parseFloat(num || 0).toLocaleString('vi-VN') + " đ";
+        }
+
+        function applyStatusClass($el, statusText) {
+            var st = (statusText || "").toLowerCase();
+            $el.removeClass("processing shipping completed cancelled");
+
+            if (st.includes("đang giao") || st.includes("dang giao")) $el.addClass("shipping");
+            else if (st.includes("hoàn thành") || st.includes("hoan thanh")) $el.addClass("completed");
+            else if (st.includes("hủy") || st.includes("huy")) $el.addClass("cancelled");
+            else $el.addClass("processing");
+
+            $el.text(statusText);
+        }
+
+        // ===== VIEW ORDER =====
+        function viewOrder(id) {
+            $.get("/Admin/DonHang/Details", { id }, function (res) {
+                if (!res || !res.success) return;
+                const o = res.data;
+
+                $("#v_MaDH").text(o.MaDHText);
+                $("#v_NgayDat").text(o.NgayDat);
+                $("#v_KhachHang").text(o.KhachHang);
+                $("#v_Email").text(o.Email);
+                $("#v_SDT").text(o.SDT);
+                $("#v_DiaChi").text(o.DiaChi);
+                $("#v_TongTien").text(formatMoney(o.TongTien));
+
+                $("#v_Avatar").text(o.KhachHang ? o.KhachHang.trim()[0].toUpperCase() : "?");
+                applyStatusClass($("#v_TrangThai"), o.TrangThai);
+
+                const tbody = $("#v_ProductBody");
+                tbody.empty();
+
+                if (o.Items && o.Items.length) {
+                    o.Items.forEach(it => {
+                        const imgHtml = it.HinhAnh
+                            ? `<img src="${it.HinhAnh}" class="prod-img"/>`
+                            : `<div class="prod-img-placeholder"><i class="bi bi-image"></i></div>`;
+
+                        tbody.append(`
+                            <tr>
+                                <td>
+                                    <div class="prod-info">
+                                        ${imgHtml}
+                                        <div>
+                                            <div class="prod-name">${it.TenSP}</div>
+                                            ${it.TenBienThe ? `<div class="prod-variant">${it.TenBienThe}</div>` : ""}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-center">${formatMoney(it.DonGia)}</td>
+                                <td class="text-center">${it.SoLuong}</td>
+                                <td class="text-right">${formatMoney(it.ThanhTien)}</td>
+                            </tr>
+                        `);
+                    });
+                } else {
+                    tbody.append(`<tr><td colspan="4" class="text-center text-muted">Không có sản phẩm trong đơn.</td></tr>`);
+                }
+
+                showModal("#viewModal");
+            });
+        }
+
+        // ===== OPEN EDIT =====
+        function editOrder(id) {
+            $.get("/Admin/DonHang/Details", { id }, function (res) {
+                if (!res || !res.success) return;
+                const o = res.data;
+
+                $("#edit_MaDH").val(o.MaDH);
+                $("#edit_MaDHText").text(o.MaDHText);
+                $("#edit_KhachHang").text(o.KhachHang);
+                $("#edit_NgayDat").text(o.NgayDat);
+                $("#edit_TongTien").text(formatMoney(o.TongTien));
+
+                $("input[name='status']").prop("checked", false);
+                $(`input[name='status'][value='${o.TrangThai}']`).prop("checked", true);
+
+                showModal("#editModal");
+            });
+        }
+
+        // ===== SAVE EDIT =====
+        function saveEdit() {
+            const data = {
+                MaDH: $("#edit_MaDH").val(),
+                TrangThai: $("input[name='status']:checked").val()
+            };
+
+            if (!data.TrangThai) {
+                Swal.fire("Thiếu thông tin!", "Vui lòng chọn trạng thái!", "warning");
+                return;
+            }
+
+            $.ajax({
+                url: "/Admin/DonHang/Edit",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(data),
+                success: function (res) {
+                    if (res === true) {
+                        Swal.fire("Thành công!", "Đã cập nhật trạng thái đơn hàng.", "success")
+                            .then(() => location.reload());
+                    } else {
+                        Swal.fire("Lỗi!", "Không thể cập nhật đơn hàng!", "error");
+                    }
+                }
+            });
+        }
+
+        // ===== DELETE =====
+        function deleteOrder(id) {
+            Swal.fire({
+                title: "Xóa đơn hàng?",
+                text: "Bạn có chắc muốn xóa đơn hàng này không?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#E76F51",
+                cancelButtonColor: "#6c757d",
+                confirmButtonText: "Xóa",
+                cancelButtonText: "Hủy"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post("/Admin/DonHang/Delete", { id }, function (res) {
+                        if (res === true) {
+                            Swal.fire("Đã xóa!", "Đơn hàng đã được xóa.", "success")
+                                .then(() => location.reload());
+                        } else {
+                            Swal.fire("Lỗi!", "Không thể xóa đơn hàng!", "error");
+                        }
+                    });
+                }
+            });
+        }
+
+        // ===== SEARCH =====
+        $("#btnSearch").click(function () {
+            let kw = $("#searchBox").val().trim();
+            window.location.href = "/Admin/DonHang?search=" + encodeURIComponent(kw) + "&pageSize=@pageSize";
+        });
+
+        $("#searchBox").keypress(function (e) {
+            if (e.which === 13) $("#btnSearch").click();
+        });
+    </script>
+}

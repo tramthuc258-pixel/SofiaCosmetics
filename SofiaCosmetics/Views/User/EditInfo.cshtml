@@ -1,0 +1,132 @@
+﻿@model SofiaCosmetics.Models.KHACHHANG
+@{
+    ViewBag.Title = "Chỉnh sửa thông tin";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .profile-wrapper {
+        max-width: 700px;
+        margin: 40px auto;
+        background: #fff;
+        border-radius: 12px;
+        padding: 25px 35px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .profile-title {
+        font-size: 26px;
+        font-weight: 700;
+        margin-bottom: 20px;
+        color: #e91e63;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+        .profile-title i {
+            font-size: 30px;
+        }
+
+    .profile-label {
+        font-weight: 600;
+        margin-bottom: 5px;
+        color: #333;
+    }
+
+    .profile-input {
+        border-radius: 10px;
+        padding: 10px 14px;
+        border: 1px solid #ccc;
+        transition: 0.2s;
+    }
+
+        .profile-input:focus {
+            border-color: #e91e63;
+            box-shadow: 0 0 0 0.15rem rgba(233, 30, 99, 0.25);
+        }
+
+    .profile-btn {
+        width: 100%;
+        background: #e91e63;
+        border: none;
+        padding: 14px;
+        color: #fff;
+        font-weight: 600;
+        font-size: 18px;
+        border-radius: 10px;
+        transition: .2s;
+    }
+
+        .profile-btn:hover {
+            background: #d21756;
+        }
+
+    .readonly-box {
+        background: #f7f7f7;
+        border-radius: 10px;
+        padding: 12px;
+        border: 1px solid #ddd;
+    }
+
+    .section-divider {
+        margin: 25px 0;
+        height: 1px;
+        background: #eee;
+    }
+</style>
+
+
+<div class="profile-wrapper">
+
+    <h3 class="profile-title">
+        <i class="lni lni-user"></i> Thông tin tài khoản
+    </h3>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+
+    <form method="post">
+
+        <!-- Email -->
+        <div class="mb-3">
+            <label class="profile-label">Email (không thể thay đổi)</label>
+            <div class="readonly-box">@Model.Email</div>
+        </div>
+
+        <!-- Họ tên -->
+        <div class="mb-3">
+            <label class="profile-label">Họ và tên</label>
+            <input type="text" name="HoTen" class="form-control profile-input"
+                   value="@Model.HoTen" required />
+        </div>
+
+        <!-- Số điện thoại -->
+        <div class="mb-3">
+            <label class="profile-label">Số điện thoại</label>
+            <input type="text" name="SDT" class="form-control profile-input"
+                   value="@Model.SDT" />
+        </div>
+
+        <!-- Ngày sinh -->
+        <div class="mb-3">
+            <label class="profile-label">Ngày sinh</label>
+            <input type="date" name="NgaySinh" class="form-control profile-input"
+                   value="@(Model.NgaySinh?.ToString("yyyy-MM-dd"))" />
+        </div>
+
+        <!-- Địa chỉ -->
+        <div class="mb-3">
+            <label class="profile-label">Địa chỉ</label>
+            <input type="text" name="DiaChi" class="form-control profile-input"
+                   value="@Model.DiaChi" />
+        </div>
+
+        <button class="profile-btn">Lưu thay đổi</button>
+    </form>
+
+</div>
+

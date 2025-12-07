@@ -1,0 +1,139 @@
+﻿@model SofiaCosmetics.Models.TINTUC
+@using System.Web
+@using System.Text.RegularExpressions
+@using System.Linq
+@using System.Collections.Generic
+<link href="~/Content/huongdanmuahang.css" rel="stylesheet" />
+@{
+    var pageTitle = Model?.TenTrang ?? "Hướng dẫn mua hàng";
+    ViewBag.Title = pageTitle;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    string rawHtml = HttpUtility.HtmlDecode(Model?.NoiDung ?? "");
+
+    Func<string, string> StripHtml = s =>
+string.IsNullOrWhiteSpace(s) ? "" : Regex.Replace(s, "<[^>]*>", "").Trim();
+
+    Func<string, string> Norm = s =>
+        (s ?? "").Replace("\r\n", "\n").Replace("\r", "\n").Trim();
+
+    Func<string, List<string>> SplitBlocks = s =>
+    {
+        var t = Norm(StripHtml(s));
+        if (string.IsNullOrWhiteSpace(t)) return new List<string>();
+        t = Regex.Replace(t, @"^\s*---\s*$", "\n---\n", RegexOptions.Multiline);
+        return Regex.Split(t, @"(?:^|\n)\s*---\s*(?:\n|$)")
+                    .Select(b => b.Trim())
+                    .Where(b => !string.IsNullOrWhiteSpace(b))
+                    .ToList();
+    };
+
+    bool hasSeparator = Regex.IsMatch(Norm(StripHtml(rawHtml)), @"(?:^|\n)\s*---\s*(?:\n|$)");
+
+    Func<List<string>, List<(string title, string desc)>> ParsePairList = lines =>
+    {
+        var res = new List<(string, string)>();
+        foreach (var ln in lines)
+        {
+            var s = ln.Trim();
+            s = Regex.Replace(s, @"^\d+\.\s*", "");
+            s = Regex.Replace(s, @"^-\s*", "");
+            if (string.IsNullOrWhiteSpace(s)) continue;
+
+            var parts = s.Split(new[] { "|" }, 2, System.StringSplitOptions.None)
+                         .Select(p => p.Trim()).ToArray();
+            var title = parts.ElementAtOrDefault(0) ?? "";
+            var desc = parts.ElementAtOrDefault(1) ?? "";
+            if (!string.IsNullOrWhiteSpace(title))
+                res.Add((title, desc));
+        }
+        return res;
+    };
+
+    var blocks = hasSeparator ? SplitBlocks(rawHtml) : new List<string>();
+
+    // block0: hero
+    var heroLines = blocks.ElementAtOrDefault(0) != null
+        ? Norm(blocks[0]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+    string heroTitle = heroLines.ElementAtOrDefault(0) ?? "HƯỚNG DẪN MUA HÀNG";
+    string heroDesc = heroLines.ElementAtOrDefault(1) ?? "Mua hàng tại SofiaCosmetics rất đơn giản. Bạn chỉ cần làm theo vài bước dưới đây là có thể nhận hàng nhanh chóng.";
+
+    // block1: steps (mỗi dòng: Title | Desc)
+    var stepLines = blocks.ElementAtOrDefault(1) != null
+        ? Norm(blocks[1]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+    var steps = ParsePairList(stepLines);
+    if (steps.Count == 0)
+    {
+        steps = new List<(string, string)>{
+            ("Chọn sản phẩm","Tìm sản phẩm bạn muốn mua tại trang 'Sản phẩm' hoặc dùng ô tìm kiếm."),
+            ("Thêm vào giỏ","Chọn dung tích/phiên bản (nếu có) rồi bấm 'Thêm vào giỏ'."),
+            ("Điền thông tin","Nhập họ tên, SĐT, địa chỉ nhận hàng và ghi chú (nếu cần)."),
+            ("Xác nhận đơn","SofiaCosmetics sẽ gọi/Zalo xác nhận đơn trong giờ làm việc."),
+            ("Nhận hàng & thanh toán","Bạn kiểm tra ngoại quan/tem niêm phong rồi thanh toán COD hoặc chuyển khoản.")
+        };
+    }
+    var stepIcons = new[] { "bi-search-heart", "bi-bag-plus", "bi-pencil-square", "bi-telephone-inbound", "bi-truck" };
+
+    // block2: tips cards
+    var tipLines = blocks.ElementAtOrDefault(2) != null
+        ? Norm(blocks[2]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+    var tips = ParsePairList(tipLines);
+    if (tips.Count == 0)
+    {
+        tips = new List<(string, string)>{
+            ("Kiểm tra hàng khi nhận","Bạn được kiểm tra seal/tem và ngoại quan trước khi thanh toán."),
+            ("Hỗ trợ tư vấn miễn phí","Nhắn Fanpage/Zalo để được tư vấn phù hợp da."),
+            ("Đổi trả theo chính sách","Nếu lỗi do shop/vận chuyển, Sofia hỗ trợ đổi trả minh bạch.")
+        };
+    }
+
+    // block3: footer note
+    var footLines = blocks.ElementAtOrDefault(3) != null
+        ? Norm(blocks[3]).Split('\n').Select(x => x.Trim()).Where(x => x != "").ToList()
+        : new List<string>();
+    string footNote = footLines.FirstOrDefault() ?? "Cảm ơn bạn đã tin tưởng mua sắm tại SofiaCosmetics 💗";
+}
+
+<div class="sf-static container">
+    <h2 class="sf-static__title">@(Model?.TenTrang ?? "Hướng dẫn mua hàng")</h2>
+    <div class="sf-static__line"></div>
+
+    <section class="buy-hero">
+        <div class="buy-hero__badge"><i class="bi bi-cart-check"></i></div>
+        <h1>@heroTitle</h1>
+        <p>@heroDesc</p>
+    </section>
+
+    <section class="buy-steps">
+        @for (int i = 0; i < steps.Count; i++)
+        {
+            var st = steps[i];
+            var icon = stepIcons.ElementAtOrDefault(i) ?? "bi-stars";
+            <div class="buy-step">
+                <div class="buy-step__left">
+                    <div class="buy-step__num">@(i+1)</div>
+                    <div class="buy-step__icon"><i class="bi @icon"></i></div>
+                </div>
+                <div class="buy-step__body">
+                    <h3>@st.title</h3>
+                    <p>@st.desc</p>
+                </div>
+            </div>
+        }
+    </section>
+
+    <section class="buy-tips">
+        @foreach (var t in tips)
+        {
+            <div class="buy-tip">
+                <h3>@t.title</h3>
+                <p>@t.desc</p>
+            </div>
+        }
+    </section>
+
+    <div class="buy-footer">@footNote</div>
+</div>
