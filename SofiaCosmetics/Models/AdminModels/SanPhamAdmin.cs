@@ -9,7 +9,7 @@ namespace SofiaCosmetics.Models.AdminModels
     public class SanPhamAdmin
     {
         public int MaSP { get; set; }
-        public int MaCTSP { get; set; }   // ✅ thêm để biết biến thể
+        public int MaCTSP { get; set; }   // ✅ biết biến thể nào
 
         public string TenSP { get; set; }
         public string ThuongHieu { get; set; }
@@ -23,6 +23,7 @@ namespace SofiaCosmetics.Models.AdminModels
         public bool? TrangThai { get; set; }
 
         public string TenBienThe { get; set; }
+        public int? MaKM { get; set; } // ✅ KM theo biến thể
     }
 
     // Model add
@@ -32,27 +33,24 @@ namespace SofiaCosmetics.Models.AdminModels
         public string MoTa { get; set; }
         public int MaDM { get; set; }
         public int MaTH { get; set; }
-        public int? MaKM { get; set; }
+
         public decimal Gia { get; set; }
         public int TonKho { get; set; }
+
         public bool TrangThai { get; set; }
         public string TenBienThe { get; set; }
+
+        public int? MaKM { get; set; } // ✅ KM theo biến thể
     }
 
-    // Model edit
+    // Model edit (edit từng biến thể)
     public class EditProductModel : AddProductModel
     {
         public int MaSP { get; set; }
+        public int MaCTSP { get; set; } // ✅ edit đúng dòng
     }
 
-    // item ảnh trả về cho View/Edit (cũ - vẫn giữ nếu bạn dùng chỗ khác)
-    public class ProductImageVM
-    {
-        public int Id { get; set; }
-        public string Url { get; set; }
-    }
-
-    // ✅ Ảnh kèm biến thể để View chi tiết
+    // ✅ Ảnh trả về có biến thể
     public class VariantImageVM
     {
         public int Id { get; set; }
@@ -65,13 +63,14 @@ namespace SofiaCosmetics.Models.AdminModels
         public int TonKho { get; set; }
     }
 
-    // ✅ model thêm biến thể có khuyến mãi
+    // ✅ model thêm biến thể
     public class AddVariantModel
     {
         public int MaSP { get; set; }
         public string TenBienThe { get; set; }
         public decimal Gia { get; set; }
         public int TonKho { get; set; }
-        public int? MaKM { get; set; }  // khuyến mãi riêng của biến thể
+        public int? MaKM { get; set; } // ✅ KM riêng biến thể
     }
+
 }

@@ -110,7 +110,7 @@
 		HideFiles = new string[] { ".*" };
 
 		// Perform additional checks for image files.
-		SecureImageUploads = true;
+		SecureImageUploads = false;
 
 		// The session variable name that CKFinder must use to retrieve the
 		// "role" of the current user. The "role" is optional and can be used

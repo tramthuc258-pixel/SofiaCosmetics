@@ -3,17 +3,16 @@ using SofiaCosmetics.Models.AdminModels;
 using System;
 using System.Linq;
 using System.Web.Mvc;
+using SofiaCosmetics.Areas.Admin.Helpers;   // ✅ để dùng AuditLogger
 
 namespace SofiaCosmetics.Areas.Admin.Controllers
 {
     public class KhuyenMaiController : BaseAdminController
     {
-        //QLMyPhamEntities db = new QLMyPhamEntities();
-
         // ===========================
         // DANH SÁCH + TÌM KIẾM
         // ===========================
-        public ActionResult Index(string search = "", string status = "all", int page = 1, int pageSize = 2)
+        public ActionResult Index(string search = "", string status = "all", int page = 1, int pageSize = 5)
         {
             var list = db.KHUYENMAIs
                 .OrderByDescending(x => x.MaKM)
@@ -35,7 +34,7 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                     };
                 }).ToList();
 
-            // ===== Search như bạn đang làm =====
+            // ===== Search =====
             if (!string.IsNullOrWhiteSpace(search))
             {
                 string kw = search.Trim().ToLower();
@@ -72,11 +71,18 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
             ViewBag.Status = status;
 
             int totalPage = (int)Math.Ceiling((double)list.Count / pageSize);
+            if (totalPage < 1) totalPage = 1;
+            if (page < 1) page = 1;
+            if (page > totalPage) page = totalPage;
+
             ViewBag.Page = page;
             ViewBag.TotalPage = totalPage;
             ViewBag.PageSize = pageSize;
 
-            list = list.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+            list = list
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
 
             return View(list);
         }
@@ -98,7 +104,7 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                 if (model.NgayBatDau > model.NgayKetThuc)
                     return Json(false);
 
-                KHUYENMAI km = new KHUYENMAI
+                var km = new KHUYENMAI
                 {
                     TenKhuyenMai = model.TenKhuyenMai,
                     MoTa = model.MoTa,
@@ -110,6 +116,15 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
 
                 db.KHUYENMAIs.Add(km);
                 db.SaveChanges();
+
+                // ✅ LOG: tạo khuyến mãi
+                AuditLogger.Log(
+                    module: "KhuyenMai",
+                    action: "CREATE",
+                    target: $"KM#{km.MaKM}",
+                    note: $"Ten={km.TenKhuyenMai}, PhanTram={km.PhanTramGiam}, Tu={km.NgayBatDau:yyyy-MM-dd}, Den={km.NgayKetThuc:yyyy-MM-dd}, TrangThai={(km.TrangThai == true ? "Active" : "Inactive")}"
+                );
+
                 return Json(true);
             }
             catch
@@ -158,6 +173,13 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                 if (model.NgayBatDau > model.NgayKetThuc)
                     return Json(false);
 
+                // lưu info cũ để log
+                string oldTen = km.TenKhuyenMai;
+                double? oldPt = km.PhanTramGiam;
+                DateTime? oldBd = km.NgayBatDau;
+                DateTime? oldKt = km.NgayKetThuc;
+                bool oldTrangThai = km.TrangThai == true;
+
                 km.TenKhuyenMai = model.TenKhuyenMai;
                 km.MoTa = model.MoTa;
                 km.PhanTramGiam = model.PhanTramGiam;
@@ -166,6 +188,20 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                 km.TrangThai = model.TrangThai;
 
                 db.SaveChanges();
+
+                // ✅ LOG: sửa khuyến mãi
+                AuditLogger.Log(
+                    module: "KhuyenMai",
+                    action: "EDIT",
+                    target: $"KM#{km.MaKM}",
+                    note:
+                        $"TenCu={oldTen}, TenMoi={km.TenKhuyenMai}, " +
+                        $"PtCu={oldPt}, PtMoi={km.PhanTramGiam}, " +
+                        $"TuCu={oldBd:yyyy-MM-dd}, TuMoi={km.NgayBatDau:yyyy-MM-dd}, " +
+                        $"DenCu={oldKt:yyyy-MM-dd}, DenMoi={km.NgayKetThuc:yyyy-MM-dd}, " +
+                        $"TrangThaiCu={(oldTrangThai ? "Active" : "Inactive")}, TrangThaiMoi={(km.TrangThai == true ? "Active" : "Inactive")}"
+                );
+
                 return Json(true);
             }
             catch
@@ -175,19 +211,43 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
         }
 
         // ===========================
-        // XÓA KHUYẾN MÃI (SOFT)
+        // XÓA KHUYẾN MÃI
         // ===========================
         [HttpPost]
         public JsonResult Delete(int id)
         {
-            var km = db.KHUYENMAIs.Find(id);
-            if (km == null) return Json(false);
+            try
+            {
+                var km = db.KHUYENMAIs.Find(id);
+                if (km == null) return Json(false);
 
-            // Gợi ý soft delete để tránh lỗi FK với SANPHAM
-            km.TrangThai = false;
-            db.SaveChanges();
+                string ten = km.TenKhuyenMai;
 
-            return Json(true);
+                // 1) Gỡ FK khỏi sản phẩm trước (vì MaKM nullable)
+                var spList = db.SANPHAMs.Where(x => x.MaKM == id).ToList();
+                foreach (var sp in spList)
+                {
+                    sp.MaKM = null;
+                }
+
+                // 2) Xóa khuyến mãi
+                db.KHUYENMAIs.Remove(km);
+                db.SaveChanges();
+
+                // ✅ LOG: xóa khuyến mãi
+                AuditLogger.Log(
+                    module: "KhuyenMai",
+                    action: "DELETE",
+                    target: $"KM#{id}",
+                    note: $"Ten={ten}"
+                );
+
+                return Json(true);
+            }
+            catch
+            {
+                return Json(false);
+            }
         }
 
         // ===========================
@@ -207,7 +267,9 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                 km.PhanTramGiam,
                 NgayBatDau = km.NgayBatDau?.ToString("dd/MM/yyyy"),
                 NgayKetThuc = km.NgayKetThuc?.ToString("dd/MM/yyyy"),
-                TrangThai = (km.TrangThai == true && !hetHan) ? "Hoạt động" : (hetHan ? "Hết hạn" : "Ngừng hoạt động")
+                TrangThai = (km.TrangThai == true && !hetHan)
+                    ? "Hoạt động"
+                    : (hetHan ? "Hết hạn" : "Ngừng hoạt động")
             }, JsonRequestBehavior.AllowGet);
         }
     }

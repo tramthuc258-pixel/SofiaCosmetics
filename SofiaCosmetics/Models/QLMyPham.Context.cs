@@ -39,9 +39,9 @@ namespace SofiaCosmetics.Models
         public DbSet<MENU> MENUs { get; set; }
         public DbSet<SANPHAM> SANPHAMs { get; set; }
         public DbSet<SLIDER> SLIDERs { get; set; }
-        public DbSet<TINNHAN> TINNHANs { get; set; }
-        public DbSet<TINTUC> TINTUCs { get; set; }
         public DbSet<THANHTOAN> THANHTOANs { get; set; }
         public DbSet<THUONGHIEU> THUONGHIEUx { get; set; }
+        public DbSet<TINNHAN> TINNHANs { get; set; }
+        public DbSet<TINTUC> TINTUCs { get; set; }
     }
 }

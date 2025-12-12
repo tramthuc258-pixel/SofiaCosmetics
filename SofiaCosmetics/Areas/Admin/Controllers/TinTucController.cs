@@ -1,5 +1,6 @@
 ﻿using SofiaCosmetics.Models;
 using SofiaCosmetics.Models.AdminModels;
+using SofiaCosmetics.Areas.Admin.Helpers;   // ✅ thêm để dùng AuditLogger
 using System;
 using System.Linq;
 using System.Text;
@@ -47,25 +48,20 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
             // ===== 1) LỌC SQL TRƯỚC (không dùng ToNoMark trong SQL) =====
             if (!string.IsNullOrWhiteSpace(search))
             {
-                // tìm theo mã: TT010 / tt10 / 10 ...
                 int num;
                 bool isCodeSearch = false;
 
-                string onlyNum = kw.Replace("tt", "");  // "tt010" -> "010"
+                string onlyNum = kw.Replace("tt", "");
                 if (int.TryParse(onlyNum, out num))
                     isCodeSearch = true;
 
                 q = q.Where(x =>
-                    // tìm theo mã số
                     (isCodeSearch && x.MaTT == num)
-
-                    // tìm theo tên trang / meta title (SQL translate được)
                     || (x.TenTrang ?? "").Contains(search)
                     || (x.MetaTitle ?? "").Contains(search)
                 );
             }
 
-            // Lấy list ra bộ nhớ
             var raw = q
                 .OrderByDescending(x => x.MaTT)
                 .Select(x => new AdminNewsListVM
@@ -77,25 +73,20 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                 })
                 .ToList();
 
-            // ===== 2) LỌC BỔ SUNG IN-MEMORY (được dùng ToNoMark / format TTxxx) =====
+            // ===== 2) LỌC BỔ SUNG IN-MEMORY =====
             if (!string.IsNullOrWhiteSpace(search))
             {
                 raw = raw.Where(x =>
-                    // match mã TT dạng TT010
                     ("tt" + x.MaTT.ToString("000")).ToLower().Contains(kw)
                     || x.MaTT.ToString().Contains(kw)
-
-                    // match tên trang / meta title không dấu
                     || ToNoMark((x.TenTrang ?? "").ToLower()).Contains(kwNoMark)
                     || ToNoMark((x.MetaTitle ?? "").ToLower()).Contains(kwNoMark)
-
-                    // match có dấu bình thường
                     || (x.TenTrang ?? "").ToLower().Contains(kw)
                     || (x.MetaTitle ?? "").ToLower().Contains(kw)
                 ).ToList();
             }
 
-            // ===== 3) PAGING SAU CÙNG =====
+            // ===== 3) PAGING =====
             int totalItem = raw.Count;
             int totalPage = (int)Math.Ceiling(totalItem / (double)pageSize);
             if (totalPage == 0) totalPage = 1;
@@ -119,6 +110,9 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
             var tt = db.TINTUCs.Find(id);
             if (tt == null)
                 return Json(new { success = false, message = "Không tìm thấy bài viết!" }, JsonRequestBehavior.AllowGet);
+
+            // (optional) ✅ nếu bạn muốn log hành vi xem chi tiết thì mở comment này
+            // AuditLogger.Log("TinTuc", "VIEW", $"TT#{tt.MaTT}", $"TenTrang={tt.TenTrang}, MetaTitle={tt.MetaTitle}");
 
             return Json(new
             {
@@ -163,10 +157,20 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                 db.TINTUCs.Add(entity);
                 db.SaveChanges();
 
+                // ✅ LOG
+                AuditLogger.Log(
+                    module: "TinTuc",
+                    action: "CREATE",
+                    target: $"TT#{entity.MaTT}",
+                    note: $"TenTrang={entity.TenTrang}, MetaTitle={entity.MetaTitle}"
+                );
+
                 return Json(new { success = true, message = "Đã thêm bài viết!" });
             }
             catch (Exception ex)
             {
+                // (tuỳ bạn) log lỗi
+                AuditLogger.Log("TinTuc", "ERROR_CREATE", "TT", ex.Message);
                 return Json(new { success = false, message = ex.Message });
             }
         }
@@ -192,15 +196,30 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                 if (existed)
                     return Json(new { success = false, message = "Meta title bị trùng!" });
 
+                // ✅ old info để log
+                string oldInfo = $"TenTrang={old.TenTrang}, MetaTitle={old.MetaTitle}";
+
                 old.TenTrang = (model.TenTrang ?? "").Trim();
                 old.MetaTitle = meta;
                 old.NoiDung = model.NoiDung ?? "";
 
                 db.SaveChanges();
+
+                string newInfo = $"TenTrang={old.TenTrang}, MetaTitle={old.MetaTitle}";
+
+                // ✅ LOG
+                AuditLogger.Log(
+                    module: "TinTuc",
+                    action: "EDIT",
+                    target: $"TT#{old.MaTT}",
+                    note: oldInfo + "  =>  " + newInfo
+                );
+
                 return Json(new { success = true, message = "Đã cập nhật bài viết!" });
             }
             catch (Exception ex)
             {
+                AuditLogger.Log("TinTuc", "ERROR_EDIT", $"TT#{model?.MaTT}", ex.Message);
                 return Json(new { success = false, message = ex.Message });
             }
         }
@@ -217,6 +236,14 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                 if (tt == null)
                     return Json(new { success = false, message = "Không tìm thấy bài viết!" });
 
+                // ✅ LOG trước khi xóa
+                AuditLogger.Log(
+                    module: "TinTuc",
+                    action: "DELETE",
+                    target: $"TT#{tt.MaTT}",
+                    note: $"TenTrang={tt.TenTrang}, MetaTitle={tt.MetaTitle}"
+                );
+
                 db.TINTUCs.Remove(tt);
                 db.SaveChanges();
 
@@ -224,6 +251,7 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
             }
             catch (Exception ex)
             {
+                AuditLogger.Log("TinTuc", "ERROR_DELETE", $"TT#{id}", ex.Message);
                 return Json(new { success = false, message = ex.Message });
             }
         }

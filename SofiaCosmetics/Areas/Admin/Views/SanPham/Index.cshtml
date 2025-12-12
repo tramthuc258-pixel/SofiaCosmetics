@@ -123,14 +123,14 @@
                                 </button>
 
                                 <button class="btn-edit btn-icon tooltip-btn"
-                                        data-tip="Sửa sản phẩm"
-                                        onclick="editProduct(@sp.MaSP)">
+                                        data-tip="Sửa biến thể"
+                                        onclick="editVariant(@sp.MaCTSP)">
                                     <i class="bi bi-pencil-square"></i>
                                 </button>
 
                                 <button class="btn-delete btn-icon tooltip-btn"
-                                        data-tip="Xóa sản phẩm"
-                                        onclick="deleteProduct(@sp.MaSP)">
+                                        data-tip="Xóa biến thể"
+                                        onclick="deleteVariant(@sp.MaCTSP)">
                                     <i class="bi bi-trash3-fill"></i>
                                 </button>
                             </div>
@@ -343,6 +343,7 @@
         </div>
 
         <input type="hidden" id="edit_MaSP" />
+        <input type="hidden" id="edit_MaCTSP" />
 
         <div class="sp-modal-body">
             <div class="sp-form-grid">
@@ -804,40 +805,43 @@
         }
 
         // ===== EDIT =====
-        function editProduct(id) {
+        function editVariant(maCTSP) {
             loadDropdowns(function () {
-                $.get("/Admin/SanPham/GetProduct", { id }, function (data) {
+                $.get("/Admin/SanPham/GetVariant", { id: maCTSP }, function (data) {
                     if (!data) return;
 
                     $("#edit_MaSP").val(data.MaSP);
+                    $("#edit_MaCTSP").val(data.MaCTSP);
+
                     $("#edit_TenSP").val(data.TenSP);
                     $("#edit_MoTa").val(data.MoTa);
                     $("#edit_Gia").val(data.Gia);
                     $("#edit_TonKho").val(data.TonKho);
 
+                    $("#edit_TrangThai").prop("checked", data.TrangThai === true);
+
                     $("#edit_File").val("");
                     editNewFiles = [];
                     $("#edit_FileName").text("Giữ ảnh hiện tại");
-                    $("#edit_NewPreviewList").addClass("empty").text("Chưa chọn ảnh mới");
 
-                    $("#edit_TrangThai").prop("checked", data.TrangThai === true);
+                    $("#edit_NewPreviewList").addClass("empty").text("Chưa chọn ảnh mới");
 
                     const oldBox = $("#edit_OldPreviewList");
                     oldBox.empty();
                     (data.Images || []).forEach(img => {
                         oldBox.append(`
-                                        <div class="preview-item old" data-id="${img.Id}">
-                                            <img src="${img.Url}" />
-                                            <button class="remove-x red" type="button"
-                                                    onclick="deleteOldImage(${img.Id}, this)">×</button>
-                                        </div>
-                                    `);
+                    <div class="preview-item old" data-id="${img.Id}">
+                        <img src="${img.Url}" />
+                        <button class="remove-x red" type="button"
+                                onclick="deleteOldImage(${img.Id}, this)">×</button>
+                    </div>
+                `);
                     });
 
                     setTimeout(function () {
                         $("#edit_MaDM").val(data.MaDM);
                         $("#edit_MaTH").val(data.MaTH);
-                        $("#edit_MaKM").val(data.MaKM);
+                        $("#edit_MaKM").val(data.MaKM || "");
                         loadBienTheEdit(data.MaDM, data.TenBienThe);
                         calcPreview("edit");
                     }, 80);
@@ -930,11 +934,14 @@
 
             const fd = new FormData();
             fd.append("MaSP", $("#edit_MaSP").val());
+            fd.append("MaCTSP", $("#edit_MaCTSP").val()); // ✅ quan trọng
+
             fd.append("TenSP", $("#edit_TenSP").val().trim());
             fd.append("MoTa", $("#edit_MoTa").val().trim());
             fd.append("MaDM", $("#edit_MaDM").val());
             fd.append("MaTH", $("#edit_MaTH").val());
-            fd.append("MaKM", $("#edit_MaKM").val());
+            fd.append("MaKM", $("#edit_MaKM").val());   // ✅ KM theo biến thể
+
             fd.append("Gia", $("#edit_Gia").val());
             fd.append("TonKho", $("#edit_TonKho").val());
             fd.append("TrangThai", $("#edit_TrangThai").is(":checked"));
@@ -951,7 +958,7 @@
                 success: function (res) {
                     if (res.success) {
                         hideModal("#editModal");
-                        Swal.fire("Thành công!", "Đã cập nhật sản phẩm.", "success")
+                        Swal.fire("Thành công!", "Đã cập nhật biến thể.", "success")
                             .then(() => location.reload());
                     } else {
                         Swal.fire("Lỗi!", res.message || "Không thể cập nhật!", "error");
@@ -961,25 +968,27 @@
         }
 
         // ===== DELETE PRODUCT =====
-        function deleteProduct(id) {
+        function deleteVariant(maCTSP) {
             Swal.fire({
                 title: "Xóa sản phẩm?",
-                text: "Bạn có chắc muốn xóa sản phẩm này không?",
+                text: "Bạn có muốn xóa sản phẩm này không?",
                 icon: "warning",
                 showCancelButton: true,
-                confirmButtonColor: "#E76F51",
-                cancelButtonColor: "#6c757d",
+
                 confirmButtonText: "Xóa",
                 cancelButtonText: "Hủy"
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.post("/Admin/SanPham/DeleteProduct", { id }, function (res) {
-                        if (res.success) {
-                            Swal.fire("Đã xóa!", "Sản phẩm đã được xóa.", "success")
-                                .then(() => location.reload());
-                        } else Swal.fire("Lỗi!", "Không thể xóa sản phẩm!", "error");
-                    });
-                }
+            }).then(rs => {
+                if (!rs.isConfirmed) return;
+
+                $.post("/Admin/SanPham/DeleteVariant", { id: maCTSP }, function (res) {
+                    if (res && res.success) {
+                        Swal.fire("Đã xóa!", "", "success")
+                            .then(() => location.reload());
+                    } else {
+                        Swal.fire("Lỗi!", res.message || "Không xóa được.", "error");
+                    }
+                });
+
             });
         }
 

@@ -28,6 +28,7 @@
           <Property Name="Gia" Type="decimal" Precision="18" Scale="2" Nullable="false" />
           <Property Name="GiaKhuyenMai" Type="decimal" Precision="18" Scale="2" />
           <Property Name="SoLuongTon" Type="int" />
+          <Property Name="MaKM" Type="int" />
         </EntityType>
         <EntityType Name="CHITIETDONHANG">
           <Key>
@@ -119,6 +120,8 @@
           <Property Name="NgayBatDau" Type="date" />
           <Property Name="NgayKetThuc" Type="date" />
           <Property Name="TrangThai" Type="bit" />
+          <Property Name="MaCode" Type="nvarchar" MaxLength="50" />
+          <Property Name="IsNewUserOnly" Type="bit" />
         </EntityType>
         <EntityType Name="MENU">
           <Key>
@@ -156,6 +159,24 @@
           <Property Name="TrangThai" Type="bit" />
           <Property Name="NgayTao" Type="datetime" />
         </EntityType>
+        <EntityType Name="THANHTOAN">
+          <Key>
+            <PropertyRef Name="MaTT" />
+          </Key>
+          <Property Name="MaTT" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="MaDH" Type="int" Nullable="false" />
+          <Property Name="PhuongThuc" Type="nvarchar" MaxLength="50" />
+          <Property Name="TrangThai" Type="nvarchar" MaxLength="50" />
+          <Property Name="NgayThanhToan" Type="datetime" />
+        </EntityType>
+        <EntityType Name="THUONGHIEU">
+          <Key>
+            <PropertyRef Name="MaTH" />
+          </Key>
+          <Property Name="MaTH" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="TenThuongHieu" Type="nvarchar" MaxLength="100" Nullable="false" />
+          <Property Name="MoTa" Type="nvarchar" MaxLength="500" />
+        </EntityType>
         <EntityType Name="TINNHAN">
           <Key>
             <PropertyRef Name="MaTN" />
@@ -175,24 +196,6 @@
           <Property Name="NoiDung" Type="ntext" />
           <Property Name="NgayTao" Type="smalldatetime" />
           <Property Name="MetaTitle" Type="nvarchar" MaxLength="100" />
-        </EntityType>
-        <EntityType Name="THANHTOAN">
-          <Key>
-            <PropertyRef Name="MaTT" />
-          </Key>
-          <Property Name="MaTT" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
-          <Property Name="MaDH" Type="int" Nullable="false" />
-          <Property Name="PhuongThuc" Type="nvarchar" MaxLength="50" />
-          <Property Name="TrangThai" Type="nvarchar" MaxLength="50" />
-          <Property Name="NgayThanhToan" Type="datetime" />
-        </EntityType>
-        <EntityType Name="THUONGHIEU">
-          <Key>
-            <PropertyRef Name="MaTH" />
-          </Key>
-          <Property Name="MaTH" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
-          <Property Name="TenThuongHieu" Type="nvarchar" MaxLength="100" Nullable="false" />
-          <Property Name="MoTa" Type="nvarchar" MaxLength="500" />
         </EntityType>
         <Association Name="FK__CHITIET_SA__MaSP__5165187F">
           <End Role="SANPHAM" Type="Self.SANPHAM" Multiplicity="1" />
@@ -362,6 +365,18 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
+        <Association Name="FK__THANHTOAN__MaDH__6A30C649">
+          <End Role="DONHANG" Type="Self.DONHANG" Multiplicity="1" />
+          <End Role="THANHTOAN" Type="Self.THANHTOAN" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="DONHANG">
+              <PropertyRef Name="MaDH" />
+            </Principal>
+            <Dependent Role="THANHTOAN">
+              <PropertyRef Name="MaDH" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
         <Association Name="FK__TINNHAN__MaKH__73BA3083">
           <End Role="KHACHHANG" Type="Self.KHACHHANG" Multiplicity="0..1" />
           <End Role="TINNHAN" Type="Self.TINNHAN" Multiplicity="*" />
@@ -374,15 +389,15 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
-        <Association Name="FK__THANHTOAN__MaDH__6A30C649">
-          <End Role="DONHANG" Type="Self.DONHANG" Multiplicity="1" />
-          <End Role="THANHTOAN" Type="Self.THANHTOAN" Multiplicity="*" />
+        <Association Name="FK_CTSP_KM">
+          <End Role="KHUYENMAI" Type="Self.KHUYENMAI" Multiplicity="0..1" />
+          <End Role="CHITIET_SANPHAM" Type="Self.CHITIET_SANPHAM" Multiplicity="*" />
           <ReferentialConstraint>
-            <Principal Role="DONHANG">
-              <PropertyRef Name="MaDH" />
+            <Principal Role="KHUYENMAI">
+              <PropertyRef Name="MaKM" />
             </Principal>
-            <Dependent Role="THANHTOAN">
-              <PropertyRef Name="MaDH" />
+            <Dependent Role="CHITIET_SANPHAM">
+              <PropertyRef Name="MaKM" />
             </Dependent>
           </ReferentialConstraint>
         </Association>
@@ -401,10 +416,10 @@
           <EntitySet Name="MENU" EntityType="Self.MENU" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="SANPHAM" EntityType="Self.SANPHAM" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="SLIDER" EntityType="Self.SLIDER" Schema="dbo" store:Type="Tables" />
-          <EntitySet Name="TINNHAN" EntityType="Self.TINNHAN" Schema="dbo" store:Type="Tables" />
-          <EntitySet Name="TINTUC" EntityType="Self.TINTUC" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="THANHTOAN" EntityType="Self.THANHTOAN" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="THUONGHIEU" EntityType="Self.THUONGHIEU" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="TINNHAN" EntityType="Self.TINNHAN" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="TINTUC" EntityType="Self.TINTUC" Schema="dbo" store:Type="Tables" />
           <AssociationSet Name="FK__CHITIET_SA__MaSP__5165187F" Association="Self.FK__CHITIET_SA__MaSP__5165187F">
             <End Role="SANPHAM" EntitySet="SANPHAM" />
             <End Role="CHITIET_SANPHAM" EntitySet="CHITIET_SANPHAM" />
@@ -461,13 +476,17 @@
             <End Role="THUONGHIEU" EntitySet="THUONGHIEU" />
             <End Role="SANPHAM" EntitySet="SANPHAM" />
           </AssociationSet>
+          <AssociationSet Name="FK__THANHTOAN__MaDH__6A30C649" Association="Self.FK__THANHTOAN__MaDH__6A30C649">
+            <End Role="DONHANG" EntitySet="DONHANG" />
+            <End Role="THANHTOAN" EntitySet="THANHTOAN" />
+          </AssociationSet>
           <AssociationSet Name="FK__TINNHAN__MaKH__73BA3083" Association="Self.FK__TINNHAN__MaKH__73BA3083">
             <End Role="KHACHHANG" EntitySet="KHACHHANG" />
             <End Role="TINNHAN" EntitySet="TINNHAN" />
           </AssociationSet>
-          <AssociationSet Name="FK__THANHTOAN__MaDH__6A30C649" Association="Self.FK__THANHTOAN__MaDH__6A30C649">
-            <End Role="DONHANG" EntitySet="DONHANG" />
-            <End Role="THANHTOAN" EntitySet="THANHTOAN" />
+          <AssociationSet Name="FK_CTSP_KM" Association="Self.FK_CTSP_KM">
+            <End Role="KHUYENMAI" EntitySet="KHUYENMAI" />
+            <End Role="CHITIET_SANPHAM" EntitySet="CHITIET_SANPHAM" />
           </AssociationSet>
         </EntityContainer>
       </Schema>
@@ -498,10 +517,12 @@
           <Property Name="Gia" Type="Decimal" Precision="18" Scale="2" Nullable="false" />
           <Property Name="GiaKhuyenMai" Type="Decimal" Precision="18" Scale="2" />
           <Property Name="SoLuongTon" Type="Int32" />
+          <Property Name="MaKM" Type="Int32" />
           <NavigationProperty Name="SANPHAM" Relationship="Self.FK__CHITIET_SA__MaSP__5165187F" FromRole="CHITIET_SANPHAM" ToRole="SANPHAM" />
           <NavigationProperty Name="CHITIETDONHANGs" Relationship="Self.FK__CHITIETDO__MaCTS__66603565" FromRole="CHITIET_SANPHAM" ToRole="CHITIETDONHANG" />
           <NavigationProperty Name="CHITIETGIOHANGs" Relationship="Self.FK__CHITIETGI__MaCTS__5CD6CB2B" FromRole="CHITIET_SANPHAM" ToRole="CHITIETGIOHANG" />
           <NavigationProperty Name="HINHANHs" Relationship="Self.FK__HINHANH__MaCTSP__5441852A" FromRole="CHITIET_SANPHAM" ToRole="HINHANH" />
+          <NavigationProperty Name="KHUYENMAI" Relationship="Self.FK_CTSP_KM" FromRole="CHITIET_SANPHAM" ToRole="KHUYENMAI" />
         </EntityType>
         <EntityType Name="CHITIETDONHANG">
           <Key>
@@ -612,6 +633,9 @@
           <Property Name="NgayBatDau" Type="DateTime" Precision="0" />
           <Property Name="NgayKetThuc" Type="DateTime" Precision="0" />
           <Property Name="TrangThai" Type="Boolean" />
+          <Property Name="MaCode" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="IsNewUserOnly" Type="Boolean" />
+          <NavigationProperty Name="CHITIET_SANPHAM" Relationship="Self.FK_CTSP_KM" FromRole="KHUYENMAI" ToRole="CHITIET_SANPHAM" />
           <NavigationProperty Name="SANPHAMs" Relationship="Self.FK__SANPHAM__MaKM__4CA06362" FromRole="KHUYENMAI" ToRole="SANPHAM" />
         </EntityType>
         <EntityType Name="MENU">
@@ -655,6 +679,26 @@
           <Property Name="TrangThai" Type="Boolean" />
           <Property Name="NgayTao" Type="DateTime" Precision="3" />
         </EntityType>
+        <EntityType Name="THANHTOAN">
+          <Key>
+            <PropertyRef Name="MaTT" />
+          </Key>
+          <Property Name="MaTT" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="MaDH" Type="Int32" Nullable="false" />
+          <Property Name="PhuongThuc" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="TrangThai" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="NgayThanhToan" Type="DateTime" Precision="3" />
+          <NavigationProperty Name="DONHANG" Relationship="Self.FK__THANHTOAN__MaDH__6A30C649" FromRole="THANHTOAN" ToRole="DONHANG" />
+        </EntityType>
+        <EntityType Name="THUONGHIEU">
+          <Key>
+            <PropertyRef Name="MaTH" />
+          </Key>
+          <Property Name="MaTH" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="TenThuongHieu" Type="String" MaxLength="100" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="MoTa" Type="String" MaxLength="500" FixedLength="false" Unicode="true" />
+          <NavigationProperty Name="SANPHAMs" Relationship="Self.FK__SANPHAM__MaTH__4BAC3F29" FromRole="THUONGHIEU" ToRole="SANPHAM" />
+        </EntityType>
         <EntityType Name="TINNHAN">
           <Key>
             <PropertyRef Name="MaTN" />
@@ -675,26 +719,6 @@
           <Property Name="NoiDung" Type="String" MaxLength="Max" FixedLength="false" Unicode="true" />
           <Property Name="NgayTao" Type="DateTime" Precision="0" />
           <Property Name="MetaTitle" Type="String" MaxLength="100" FixedLength="false" Unicode="true" />
-        </EntityType>
-        <EntityType Name="THANHTOAN">
-          <Key>
-            <PropertyRef Name="MaTT" />
-          </Key>
-          <Property Name="MaTT" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Name="MaDH" Type="Int32" Nullable="false" />
-          <Property Name="PhuongThuc" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
-          <Property Name="TrangThai" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
-          <Property Name="NgayThanhToan" Type="DateTime" Precision="3" />
-          <NavigationProperty Name="DONHANG" Relationship="Self.FK__THANHTOAN__MaDH__6A30C649" FromRole="THANHTOAN" ToRole="DONHANG" />
-        </EntityType>
-        <EntityType Name="THUONGHIEU">
-          <Key>
-            <PropertyRef Name="MaTH" />
-          </Key>
-          <Property Name="MaTH" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Name="TenThuongHieu" Type="String" MaxLength="100" FixedLength="false" Unicode="true" Nullable="false" />
-          <Property Name="MoTa" Type="String" MaxLength="500" FixedLength="false" Unicode="true" />
-          <NavigationProperty Name="SANPHAMs" Relationship="Self.FK__SANPHAM__MaTH__4BAC3F29" FromRole="THUONGHIEU" ToRole="SANPHAM" />
         </EntityType>
         <Association Name="FK__CHITIET_SA__MaSP__5165187F">
           <End Role="SANPHAM" Type="Self.SANPHAM" Multiplicity="1" />
@@ -741,6 +765,18 @@
             </Principal>
             <Dependent Role="HINHANH">
               <PropertyRef Name="MaCTSP" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_CTSP_KM">
+          <End Role="KHUYENMAI" Type="Self.KHUYENMAI" Multiplicity="0..1" />
+          <End Role="CHITIET_SANPHAM" Type="Self.CHITIET_SANPHAM" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="KHUYENMAI">
+              <PropertyRef Name="MaKM" />
+            </Principal>
+            <Dependent Role="CHITIET_SANPHAM">
+              <PropertyRef Name="MaKM" />
             </Dependent>
           </ReferentialConstraint>
         </Association>
@@ -903,10 +939,10 @@
           <EntitySet Name="MENUs" EntityType="Self.MENU" />
           <EntitySet Name="SANPHAMs" EntityType="Self.SANPHAM" />
           <EntitySet Name="SLIDERs" EntityType="Self.SLIDER" />
-          <EntitySet Name="TINNHANs" EntityType="Self.TINNHAN" />
-          <EntitySet Name="TINTUCs" EntityType="Self.TINTUC" />
           <EntitySet Name="THANHTOANs" EntityType="Self.THANHTOAN" />
           <EntitySet Name="THUONGHIEUx" EntityType="Self.THUONGHIEU" />
+          <EntitySet Name="TINNHANs" EntityType="Self.TINNHAN" />
+          <EntitySet Name="TINTUCs" EntityType="Self.TINTUC" />
           <AssociationSet Name="FK__CHITIET_SA__MaSP__5165187F" Association="Self.FK__CHITIET_SA__MaSP__5165187F">
             <End Role="SANPHAM" EntitySet="SANPHAMs" />
             <End Role="CHITIET_SANPHAM" EntitySet="CHITIET_SANPHAM" />
@@ -922,6 +958,10 @@
           <AssociationSet Name="FK__HINHANH__MaCTSP__5441852A" Association="Self.FK__HINHANH__MaCTSP__5441852A">
             <End Role="CHITIET_SANPHAM" EntitySet="CHITIET_SANPHAM" />
             <End Role="HINHANH" EntitySet="HINHANHs" />
+          </AssociationSet>
+          <AssociationSet Name="FK_CTSP_KM" Association="Self.FK_CTSP_KM">
+            <End Role="KHUYENMAI" EntitySet="KHUYENMAIs" />
+            <End Role="CHITIET_SANPHAM" EntitySet="CHITIET_SANPHAM" />
           </AssociationSet>
           <AssociationSet Name="FK__CHITIETDON__MaDH__656C112C" Association="Self.FK__CHITIETDON__MaDH__656C112C">
             <End Role="DONHANG" EntitySet="DONHANGs" />
@@ -1001,6 +1041,7 @@
                 <ScalarProperty Name="Gia" ColumnName="Gia" />
                 <ScalarProperty Name="GiaKhuyenMai" ColumnName="GiaKhuyenMai" />
                 <ScalarProperty Name="SoLuongTon" ColumnName="SoLuongTon" />
+                <ScalarProperty Name="MaKM" ColumnName="MaKM" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
@@ -1099,6 +1140,8 @@
                 <ScalarProperty Name="NgayBatDau" ColumnName="NgayBatDau" />
                 <ScalarProperty Name="NgayKetThuc" ColumnName="NgayKetThuc" />
                 <ScalarProperty Name="TrangThai" ColumnName="TrangThai" />
+                <ScalarProperty Name="MaCode" ColumnName="MaCode" />
+                <ScalarProperty Name="IsNewUserOnly" ColumnName="IsNewUserOnly" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
@@ -1141,6 +1184,26 @@
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
+          <EntitySetMapping Name="THANHTOANs">
+            <EntityTypeMapping TypeName="QLMyPhamModel.THANHTOAN">
+              <MappingFragment StoreEntitySet="THANHTOAN">
+                <ScalarProperty Name="MaTT" ColumnName="MaTT" />
+                <ScalarProperty Name="MaDH" ColumnName="MaDH" />
+                <ScalarProperty Name="PhuongThuc" ColumnName="PhuongThuc" />
+                <ScalarProperty Name="TrangThai" ColumnName="TrangThai" />
+                <ScalarProperty Name="NgayThanhToan" ColumnName="NgayThanhToan" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="THUONGHIEUx">
+            <EntityTypeMapping TypeName="QLMyPhamModel.THUONGHIEU">
+              <MappingFragment StoreEntitySet="THUONGHIEU">
+                <ScalarProperty Name="MaTH" ColumnName="MaTH" />
+                <ScalarProperty Name="TenThuongHieu" ColumnName="TenThuongHieu" />
+                <ScalarProperty Name="MoTa" ColumnName="MoTa" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
           <EntitySetMapping Name="TINNHANs">
             <EntityTypeMapping TypeName="QLMyPhamModel.TINNHAN">
               <MappingFragment StoreEntitySet="TINNHAN">
@@ -1160,26 +1223,6 @@
                 <ScalarProperty Name="NoiDung" ColumnName="NoiDung" />
                 <ScalarProperty Name="NgayTao" ColumnName="NgayTao" />
                 <ScalarProperty Name="MetaTitle" ColumnName="MetaTitle" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="THANHTOANs">
-            <EntityTypeMapping TypeName="QLMyPhamModel.THANHTOAN">
-              <MappingFragment StoreEntitySet="THANHTOAN">
-                <ScalarProperty Name="MaTT" ColumnName="MaTT" />
-                <ScalarProperty Name="MaDH" ColumnName="MaDH" />
-                <ScalarProperty Name="PhuongThuc" ColumnName="PhuongThuc" />
-                <ScalarProperty Name="TrangThai" ColumnName="TrangThai" />
-                <ScalarProperty Name="NgayThanhToan" ColumnName="NgayThanhToan" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="THUONGHIEUx">
-            <EntityTypeMapping TypeName="QLMyPhamModel.THUONGHIEU">
-              <MappingFragment StoreEntitySet="THUONGHIEU">
-                <ScalarProperty Name="MaTH" ColumnName="MaTH" />
-                <ScalarProperty Name="TenThuongHieu" ColumnName="TenThuongHieu" />
-                <ScalarProperty Name="MoTa" ColumnName="MoTa" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>

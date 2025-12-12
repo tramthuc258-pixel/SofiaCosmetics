@@ -4,13 +4,12 @@ using SofiaCosmetics.Models.AdminModels;
 using System;
 using System.Linq;
 using System.Web.Mvc;
+using SofiaCosmetics.Areas.Admin.Helpers;   // ✅ dùng AuditLogger
 
 namespace SofiaCosmetics.Areas.Admin.Controllers
 {
     public class DonHangController : BaseAdminController
     {
-        //QLMyPhamEntities db = new QLMyPhamEntities();
-
         // ============================
         // HÀM BỎ DẤU (dùng cho search)
         // ============================
@@ -18,21 +17,25 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
         {
             if (string.IsNullOrEmpty(text)) return "";
 
-            string[] arr1 = { "á","à","ả","ạ","ã","â","ấ","ầ","ẩ","ẫ","ậ","ă","ắ","ằ","ẳ","ẵ","ặ",
-                      "đ",
-                      "é","è","ẻ","ẽ","ẹ","ê","ế","ề","ể","ễ","ệ",
-                      "í","ì","ỉ","ĩ","ị",
-                      "ó","ò","ỏ","õ","ọ","ô","ố","ồ","ổ","ỗ","ộ","ơ","ớ","ờ","ở","ỡ","ợ",
-                      "ú","ù","ủ","ũ","ụ","ư","ứ","ừ","ử","ữ","ự",
-                      "ý","ỳ","ỷ","ỹ","ỵ" };
+            string[] arr1 = {
+                "á","à","ả","ạ","ã","â","ấ","ầ","ẩ","ẫ","ậ","ă","ắ","ằ","ẳ","ẵ","ặ",
+                "đ",
+                "é","è","ẻ","ẽ","ẹ","ê","ế","ề","ể","ễ","ệ",
+                "í","ì","ỉ","ĩ","ị",
+                "ó","ò","ỏ","õ","ọ","ô","ố","ồ","ổ","ỗ","ộ","ơ","ớ","ờ","ở","ỡ","ợ",
+                "ú","ù","ủ","ũ","ụ","ư","ứ","ừ","ử","ữ","ự",
+                "ý","ỳ","ỷ","ỹ","ỵ"
+            };
 
-            string[] arr2 = { "a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a",
-                      "d",
-                      "e","e","e","e","e","e","e","e","e","e","e",
-                      "i","i","i","i","i",
-                      "o","o","o","o","o","o","o","o","o","o","o","o","o","o","o","o","o",
-                      "u","u","u","u","u","u","u","u","u","u","u",
-                      "y","y","y","y","y" };
+            string[] arr2 = {
+                "a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a",
+                "d",
+                "e","e","e","e","e","e","e","e","e","e","e",
+                "i","i","i","i","i",
+                "o","o","o","o","o","o","o","o","o","o","o","o","o","o","o","o","o",
+                "u","u","u","u","u","u","u","u","u","u","u",
+                "y","y","y","y","y"
+            };
 
             text = text.ToLower();
             for (int i = 0; i < arr1.Length; i++)
@@ -44,13 +47,13 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
         // ============================
         // DANH SÁCH + TÌM KIẾM
         // ============================
-        public ActionResult Index(string search = "", int page = 1, int pageSize = 4)
+        public ActionResult Index(string search = "", int page = 1, int pageSize = 5)
         {
             search = (search ?? "").Trim();
             string kw = search.ToLower();
             string kwNoMark = RemoveUnicode(kw);
 
-            // ===== 1) Query gốc trên DB =====
+            // 1) Query gốc trên DB
             var q = from dh in db.DONHANGs
                     join kh in db.KHACHHANGs on dh.MaKH equals kh.MaKH
                     select new
@@ -62,15 +65,13 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                         dh.TrangThai
                     };
 
-            // ===== 2) Search trên DB (được) =====
+            // 2) Search trên DB
             if (!string.IsNullOrWhiteSpace(search))
             {
-                // tìm theo mã DH nếu nhập kiểu DH001 hoặc số
                 int num;
                 bool isCodeSearch = false;
                 string onlyNum = kw.Replace("dh", ""); // "dh001" -> "001"
-                if (int.TryParse(onlyNum, out num))
-                    isCodeSearch = true;
+                if (int.TryParse(onlyNum, out num)) isCodeSearch = true;
 
                 q = q.Where(x =>
                     (isCodeSearch && x.MaDH == num)
@@ -79,19 +80,18 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                 );
             }
 
-            // ===== 3) Đếm tổng & clamp page =====
+            // 3) Đếm tổng & clamp page
             int totalItems = q.Count();
             int totalPage = (int)Math.Ceiling(totalItems / (double)pageSize);
             if (totalPage == 0) totalPage = 1;
-
             page = Math.Max(1, Math.Min(page, totalPage));
 
-            // ===== 4) Lấy đúng trang =====
+            // 4) Lấy đúng trang
             var list = q
                 .OrderByDescending(x => x.MaDH)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .ToList() // mới ToList ở đây
+                .ToList()
                 .Select(x => new AdminOrderListVM
                 {
                     MaDH = x.MaDH,
@@ -102,7 +102,7 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                 })
                 .ToList();
 
-            // ===== 5) Search KHÔNG DẤU + mã format (lọc memory bổ sung) =====
+            // 5) Search KHÔNG DẤU + mã format (lọc memory bổ sung)
             if (!string.IsNullOrWhiteSpace(search))
             {
                 list = list.Where(x =>
@@ -116,11 +116,9 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                          RemoveUnicode(x.TrangThai.ToLower()).Contains(kwNoMark)))
                 ).ToList();
 
-                // sau lọc memory => tính lại page (để khớp)
                 totalItems = list.Count();
                 totalPage = (int)Math.Ceiling(totalItems / (double)pageSize);
                 if (totalPage == 0) totalPage = 1;
-
                 page = Math.Max(1, Math.Min(page, totalPage));
 
                 list = list.Skip((page - 1) * pageSize).Take(pageSize).ToList();
@@ -135,7 +133,7 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
         }
 
         // ============================
-        // CHI TIẾT ĐƠN (JSON cho modal XEM + SỬA)
+        // CHI TIẾT ĐƠN (JSON cho modal XEM)
         // ============================
         public JsonResult Details(int id)
         {
@@ -187,7 +185,7 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
         }
 
         // ============================
-        // SỬA TRẠNG THÁI (AJAX)
+        // SỬA TRẠNG THÁI ĐƠN (AJAX)
         // ============================
         [HttpPost]
         public JsonResult Edit(AdminOrderEditVM model)
@@ -197,8 +195,20 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                 var dh = db.DONHANGs.Find(model.MaDH);
                 if (dh == null) return Json(false);
 
+                // lưu trạng thái cũ để log
+                string oldStatus = dh.TrangThai;
+
                 dh.TrangThai = model.TrangThai;
                 db.SaveChanges();
+
+                // ✅ LOG thay đổi trạng thái đơn
+                AuditLogger.Log(
+                    module: "DonHang",
+                    action: "EDIT_STATUS",
+                    target: $"DH#{dh.MaDH}",
+                    note: $"TrangThai: {oldStatus} => {dh.TrangThai}"
+                );
+
                 return Json(true);
             }
             catch
@@ -218,19 +228,46 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                 var dh = db.DONHANGs.Find(id);
                 if (dh == null) return Json(false);
 
-                var ctdhList = db.CHITIETDONHANGs.Where(x => x.MaDH == id).ToList();
-                foreach (var item in ctdhList)
+                // lưu info cũ để log
+                string maText = "DH" + dh.MaDH.ToString("000");
+                decimal tong = dh.TongTien ?? 0;
+                string trangThai = dh.TrangThai;
+                string khach = db.KHACHHANGs
+                                 .Where(k => k.MaKH == dh.MaKH)
+                                 .Select(k => k.HoTen)
+                                 .FirstOrDefault() ?? "";
+
+                // 1) XÓA THANH TOÁN
+                var ttList = db.THANHTOANs.Where(x => x.MaDH == id).ToList();
+                foreach (var tt in ttList)
                 {
-                    db.CHITIETDONHANGs.Remove(item);
+                    db.THANHTOANs.Remove(tt);
                 }
 
+                // 2) XÓA CHI TIẾT ĐƠN
+                var ctdhList = db.CHITIETDONHANGs.Where(x => x.MaDH == id).ToList();
+                foreach (var ct in ctdhList)
+                {
+                    db.CHITIETDONHANGs.Remove(ct);
+                }
+
+                // 3) XÓA ĐƠN HÀNG
                 db.DONHANGs.Remove(dh);
                 db.SaveChanges();
+
+                // ✅ LOG xóa đơn
+                AuditLogger.Log(
+                    module: "DonHang",
+                    action: "DELETE",
+                    target: maText,
+                    note: $"KH={khach}, Tong={tong}, TrangThai={trangThai}"
+                );
+
                 return Json(true);
             }
-            catch
+            catch (Exception ex)
             {
-                return Json(false);
+                return Json(new { success = false, message = ex.Message });
             }
         }
 
@@ -239,6 +276,27 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
         // ============================
         public FileResult ExportExcel()
         {
+            // chuẩn bị data để vừa fill excel vừa log
+            var list = (from dh in db.DONHANGs
+                        join kh in db.KHACHHANGs on dh.MaKH equals kh.MaKH
+                        orderby dh.MaDH descending
+                        select new
+                        {
+                            dh.MaDH,
+                            kh.HoTen,
+                            dh.NgayDat,
+                            dh.TongTien,
+                            dh.TrangThai
+                        }).ToList();
+
+            // ✅ LOG export
+            AuditLogger.Log(
+                module: "DonHang",
+                action: "EXPORT_EXCEL",
+                target: "DonHang",
+                note: $"SoDong={list.Count}"
+            );
+
             using (var pkg = new ExcelPackage())
             {
                 var ws = pkg.Workbook.Worksheets.Add("DonHang");
@@ -255,7 +313,6 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
 
                 ws.Row(1).Height = 28;
 
-                // Viền + khung tiêu đề
                 using (var rangeTitle = ws.Cells["A1:E1"])
                 {
                     rangeTitle.Style.Border.Top.Style =
@@ -265,7 +322,7 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                         OfficeOpenXml.Style.ExcelBorderStyle.Thin;
                 }
 
-                // ====== 2) HEADER GIỐNG KHÁCH HÀNG (NỀN XANH - CHỮ TRẮNG) ======
+                // ====== 2) HEADER ======
                 string[] headers = { "Mã ĐH", "Khách hàng", "Ngày đặt", "Tổng tiền", "Trạng thái" };
                 for (int i = 0; i < headers.Length; i++)
                     ws.Cells[3, i + 1].Value = headers[i];
@@ -276,10 +333,9 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                     headerRange.Style.Font.Size = 12;
                     headerRange.Style.Font.Color.SetColor(System.Drawing.Color.White);
 
-                    // nền xanh kiểu bảng KH (bạn có thể đổi mã màu nếu muốn)
                     headerRange.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
                     headerRange.Style.Fill.BackgroundColor.SetColor(
-                        System.Drawing.Color.FromArgb(0, 112, 192) // xanh dương đậm
+                        System.Drawing.Color.FromArgb(0, 112, 192)
                     );
 
                     headerRange.Style.HorizontalAlignment =
@@ -287,7 +343,6 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                     headerRange.Style.VerticalAlignment =
                         OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
 
-                    // viền header
                     headerRange.Style.Border.Top.Style =
                     headerRange.Style.Border.Bottom.Style =
                     headerRange.Style.Border.Left.Style =
@@ -298,18 +353,6 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                 ws.Row(3).Height = 22;
 
                 // ====== 3) DATA ======
-                var list = (from dh in db.DONHANGs
-                            join kh in db.KHACHHANGs on dh.MaKH equals kh.MaKH
-                            orderby dh.MaDH descending
-                            select new
-                            {
-                                dh.MaDH,
-                                kh.HoTen,
-                                dh.NgayDat,
-                                dh.TongTien,
-                                dh.TrangThai
-                            }).ToList();
-
                 int row = 4;
                 foreach (var item in list)
                 {
@@ -323,10 +366,9 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
 
                 int lastRow = row - 1;
 
-                // ====== 4) FORMAT BẢNG + VIỀN KHUNG ======
+                // ====== 4) FORMAT BẢNG ======
                 using (var dataRange = ws.Cells[$"A3:E{lastRow}"])
                 {
-                    // viền toàn bảng
                     dataRange.Style.Border.Top.Style =
                     dataRange.Style.Border.Bottom.Style =
                     dataRange.Style.Border.Left.Style =
@@ -337,12 +379,11 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                         OfficeOpenXml.Style.ExcelVerticalAlignment.Center;
                 }
 
-                // Căn lề từng cột giống bảng
-                ws.Column(1).Width = 12;  // Mã ĐH
-                ws.Column(2).Width = 25;  // Khách hàng
-                ws.Column(3).Width = 15;  // Ngày đặt
-                ws.Column(4).Width = 16;  // Tổng tiền
-                ws.Column(5).Width = 18;  // Trạng thái
+                ws.Column(1).Width = 12;
+                ws.Column(2).Width = 25;
+                ws.Column(3).Width = 15;
+                ws.Column(4).Width = 16;
+                ws.Column(5).Width = 18;
 
                 ws.Cells[$"A4:A{lastRow}"].Style.HorizontalAlignment =
                     OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
@@ -357,7 +398,7 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                 ws.Cells[$"E4:E{lastRow}"].Style.HorizontalAlignment =
                     OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
 
-                // Tô nền zebra nhẹ cho dễ nhìn (giống excel hay dùng)
+                // zebra row
                 for (int r = 4; r <= lastRow; r++)
                 {
                     if (r % 2 == 0)
@@ -366,16 +407,18 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                         {
                             rr.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
                             rr.Style.Fill.BackgroundColor.SetColor(
-                                System.Drawing.Color.FromArgb(242, 242, 242) // xám nhạt
+                                System.Drawing.Color.FromArgb(242, 242, 242)
                             );
                         }
                     }
                 }
 
                 string fileName = "DonHang_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".xlsx";
-                return File(pkg.GetAsByteArray(),
+                return File(
+                    pkg.GetAsByteArray(),
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    fileName);
+                    fileName
+                );
             }
         }
     }

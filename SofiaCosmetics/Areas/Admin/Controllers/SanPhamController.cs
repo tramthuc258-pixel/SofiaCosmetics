@@ -1,5 +1,6 @@
 ﻿using SofiaCosmetics.Models;
 using SofiaCosmetics.Models.AdminModels;
+using SofiaCosmetics.Areas.Admin.Helpers;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -20,27 +21,18 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
 
             var q = db.CHITIET_SANPHAM.AsQueryable();
 
-            // ====== 1) SEARCH TRÊN SQL (KHÔNG DÙNG ToString/RemoveUnicode) ======
             if (!string.IsNullOrWhiteSpace(search))
             {
-                // nếu keyword dạng "sp001" hoặc số -> parse ra để tìm theo mã
                 int num;
                 bool isCodeSearch = false;
-
-                string onlyNum = kw.Replace("sp", "");  // "sp001" -> "001"
-                if (int.TryParse(onlyNum, out num))
-                    isCodeSearch = true;
+                string onlyNum = kw.Replace("sp", "");
+                if (int.TryParse(onlyNum, out num)) isCodeSearch = true;
 
                 q = q.Where(ct =>
-                    // tìm theo mã số (SQL translate được)
                     (isCodeSearch && (ct.MaSP == num || ct.MaCTSP == num))
-
-                    // tìm theo tên SP / thương hiệu / biến thể (chạy SQL được)
                     || ct.SANPHAM.TenSP.Contains(search)
                     || ct.SANPHAM.THUONGHIEU.TenThuongHieu.Contains(search)
                     || (ct.TenBienThe ?? "").Contains(search)
-
-                    // trạng thái
                     || (ct.SANPHAM.TrangThai == true && "con ban active conban".Contains(kwNoMark))
                     || (ct.SANPHAM.TrangThai == false && "ngung ban inactive ngungban het".Contains(kwNoMark))
                 );
@@ -61,17 +53,22 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                     ct.MaSP,
                     ct.TenBienThe,
                     ct.Gia,
+                    ct.GiaKhuyenMai,
                     ct.SoLuongTon,
+
                     TenSP = ct.SANPHAM.TenSP,
                     ThuongHieu = ct.SANPHAM.THUONGHIEU.TenThuongHieu,
                     TrangThai = ct.SANPHAM.TrangThai,
-                    PhanTram = ct.SANPHAM.KHUYENMAI != null
-                                ? (double?)ct.SANPHAM.KHUYENMAI.PhanTramGiam
-                                : null
+
+                    PhanTram = ct.MaKM != null
+                                ? (double?)ct.KHUYENMAI.PhanTramGiam
+                                : null,
+
+                    ct.MaKM
                 })
                 .ToList();
 
-            // ====== 2) SEARCH BỔ SUNG IN-MEMORY (ĐƯỢC DÙNG ToString/RemoveUnicode) ======
+            // lọc in-memory bổ sung (theo mã dạng SP001, bỏ dấu, ...)
             if (!string.IsNullOrWhiteSpace(search))
             {
                 raw = raw.Where(x =>
@@ -82,22 +79,16 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                     RemoveUnicode((x.TenBienThe ?? "").ToLower()).Contains(kwNoMark)
                 ).ToList();
 
-                // cập nhật lại paging sau lọc memory
                 totalItems = raw.Count();
                 totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
                 page = Math.Max(1, Math.Min(page, totalPages == 0 ? 1 : totalPages));
-
                 raw = raw.Skip((page - 1) * pageSize).Take(pageSize).ToList();
             }
 
             var data = raw.Select(x =>
             {
-                decimal? giaGoc = x.Gia;
-                double? phanTram = x.PhanTram;
-
-                decimal? giaSauGiam = giaGoc;
-                if (giaGoc.HasValue && phanTram.HasValue && phanTram.Value > 0)
-                    giaSauGiam = giaGoc.Value * (decimal)(100 - phanTram.Value) / 100;
+                decimal giaGoc = x.Gia;
+                decimal giaSauGiam = x.GiaKhuyenMai ?? giaGoc;
 
                 string hinhAnh = db.HINHANHs
                     .Where(h => h.MaCTSP == x.MaCTSP)
@@ -110,14 +101,17 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                     MaCTSP = x.MaCTSP,
                     TenSP = x.TenSP,
                     ThuongHieu = x.ThuongHieu,
-                    TrangThai = x.TrangThai,
 
                     TenBienThe = x.TenBienThe ?? "Default",
                     GiaGoc = giaGoc,
-                    PhanTramGiam = phanTram,
+
                     GiaSauGiam = giaSauGiam,
+                    PhanTramGiam = x.PhanTram,
+                    MaKM = x.MaKM,
+
                     TonKho = x.SoLuongTon,
-                    HinhAnh = hinhAnh
+                    HinhAnh = hinhAnh,
+                    TrangThai = x.TrangThai
                 };
             }).ToList();
 
@@ -188,11 +182,13 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
             var list = db.DANHMUCs.Select(x => new { x.MaDM, x.TenDM }).ToList();
             return Json(list, JsonRequestBehavior.AllowGet);
         }
+
         public JsonResult GetThuongHieu()
         {
             var list = db.THUONGHIEUx.Select(x => new { x.MaTH, x.TenThuongHieu }).ToList();
             return Json(list, JsonRequestBehavior.AllowGet);
         }
+
         public JsonResult GetKhuyenMai()
         {
             var list = db.KHUYENMAIs.Select(x => new
@@ -221,24 +217,24 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
             return Json(result, JsonRequestBehavior.AllowGet);
         }
 
-        // ======================== GET PRODUCT ========================
+        // ======================== GET PRODUCT (view chi tiết SP) ========================
         public JsonResult GetProduct(int id)
         {
             var sp = db.SANPHAMs
                 .Include("DANHMUC")
                 .Include("THUONGHIEU")
-                .Include("KHUYENMAI")
                 .FirstOrDefault(x => x.MaSP == id);
 
             if (sp == null) return Json(null, JsonRequestBehavior.AllowGet);
 
-            var ctList = db.CHITIET_SANPHAM.Where(x => x.MaSP == id).ToList();
+            var ctList = db.CHITIET_SANPHAM
+                .Include("KHUYENMAI")
+                .Where(x => x.MaSP == id).ToList();
 
-            // ✅ gom ảnh mỗi biến thể
             var imgs = ctList.SelectMany(ct =>
                 db.HINHANHs
                     .Where(h => h.MaCTSP == ct.MaCTSP)
-                    .Select(h => new SofiaCosmetics.Models.AdminModels.VariantImageVM
+                    .Select(h => new VariantImageVM
                     {
                         Id = h.MaHinh,
                         Url = h.DuongDan,
@@ -258,23 +254,68 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                 sp.MoTa,
                 sp.MaDM,
                 sp.MaTH,
-                sp.MaKM,
+                sp.TrangThai,
 
                 DanhMuc = sp.DANHMUC?.TenDM ?? "",
                 ThuongHieu = sp.THUONGHIEU?.TenThuongHieu ?? "",
-                KhuyenMai = sp.KHUYENMAI?.TenKhuyenMai ?? "Không áp dụng",
-                PhanTramGiam = sp.KHUYENMAI?.PhanTramGiam ?? 0,
 
                 TenBienThe = ctDefault?.TenBienThe ?? "Default",
                 Gia = ctDefault?.Gia ?? 0,
                 TonKho = ctDefault?.SoLuongTon ?? 0,
 
-                Images = imgs,   // ✅ list ảnh có luôn TenBienThe/Gia/TonKho
-                sp.TrangThai
+                Images = imgs
             }, JsonRequestBehavior.AllowGet);
         }
 
-        // ======================== ADD PRODUCT (MULTI UPLOAD) ========================
+        // ======================== GET VARIANT (edit đúng biến thể) ========================
+        public JsonResult GetVariant(int id)
+        {
+            var ct = db.CHITIET_SANPHAM
+                .Include("SANPHAM.DANHMUC")
+                .Include("SANPHAM.THUONGHIEU")
+                .Include("KHUYENMAI")
+                .FirstOrDefault(x => x.MaCTSP == id);
+
+            if (ct == null) return Json(null, JsonRequestBehavior.AllowGet);
+
+            var sp = ct.SANPHAM;
+
+            var imgs = db.HINHANHs
+                .Where(h => h.MaCTSP == ct.MaCTSP)
+                .Select(h => new VariantImageVM
+                {
+                    Id = h.MaHinh,
+                    Url = h.DuongDan,
+                    MaCTSP = ct.MaCTSP,
+                    TenBienThe = ct.TenBienThe ?? "Default",
+                    Gia = ct.Gia,
+                    TonKho = ct.SoLuongTon ?? 0
+                })
+                .ToList();
+
+            return Json(new
+            {
+                sp.MaSP,
+                ct.MaCTSP,
+
+                sp.TenSP,
+                sp.MoTa,
+                sp.MaDM,
+                sp.MaTH,
+                sp.TrangThai,
+
+                TenBienThe = ct.TenBienThe ?? "Default",
+                Gia = ct.Gia,
+                TonKho = ct.SoLuongTon ?? 0,
+
+                ct.MaKM,
+                PhanTramGiam = ct.MaKM != null ? ct.KHUYENMAI.PhanTramGiam : 0,
+
+                Images = imgs
+            }, JsonRequestBehavior.AllowGet);
+        }
+
+        // ======================== ADD PRODUCT ========================
         [HttpPost]
         public JsonResult AddProduct(AddProductModel model, IEnumerable<HttpPostedFileBase> ImageFiles)
         {
@@ -290,7 +331,6 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                     MoTa = model.MoTa,
                     MaTH = model.MaTH,
                     MaDM = model.MaDM,
-                    MaKM = model.MaKM,
                     TrangThai = model.TrangThai,
                     NgayTao = DateTime.Now
                 };
@@ -302,8 +342,19 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                     MaSP = sp.MaSP,
                     Gia = model.Gia,
                     SoLuongTon = model.TonKho,
-                    TenBienThe = string.IsNullOrWhiteSpace(model.TenBienThe) ? "Default" : model.TenBienThe
+                    TenBienThe = string.IsNullOrWhiteSpace(model.TenBienThe) ? "Default" : model.TenBienThe.Trim(),
+                    MaKM = null,
+                    GiaKhuyenMai = null
                 };
+
+                if (model.MaKM.HasValue && model.MaKM.Value > 0)
+                {
+                    ct.MaKM = model.MaKM;
+                    var km = db.KHUYENMAIs.Find(model.MaKM.Value);
+                    double pt = km?.PhanTramGiam ?? 0;
+                    if (pt > 0) ct.GiaKhuyenMai = ct.Gia * (decimal)(100 - pt) / 100;
+                }
+
                 db.CHITIET_SANPHAM.Add(ct);
                 db.SaveChanges();
 
@@ -318,6 +369,14 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                 }
                 db.SaveChanges();
 
+                // LOG
+                AuditLogger.Log(
+                    module: "SanPham",
+                    action: "CREATE",
+                    target: $"SP#{sp.MaSP}",
+                    note: $"Tạo sản phẩm {sp.TenSP}"
+                );
+
                 return Json(new { success = true });
             }
             catch (Exception ex)
@@ -326,30 +385,54 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
             }
         }
 
-        // ======================== UPDATE PRODUCT (ADD MORE IMAGES) ========================
+        // ======================== UPDATE VARIANT ========================
         [HttpPost]
         public JsonResult UpdateProduct(EditProductModel model, IEnumerable<HttpPostedFileBase> ImageFiles)
         {
             try
             {
                 var sp = db.SANPHAMs.Find(model.MaSP);
-                if (sp == null) return Json(new { success = false, message = "Không tìm thấy sản phẩm!" });
+                if (sp == null)
+                    return Json(new { success = false, message = "Không tìm thấy sản phẩm!" });
 
-                var ct = db.CHITIET_SANPHAM.FirstOrDefault(x => x.MaSP == model.MaSP);
-                if (ct == null) return Json(new { success = false, message = "Không có chi tiết SP!" });
+                var ct = db.CHITIET_SANPHAM.FirstOrDefault(x => x.MaCTSP == model.MaCTSP);
+                if (ct == null)
+                    return Json(new { success = false, message = "Không tìm thấy biến thể!" });
 
+                // backup thông tin cũ nếu muốn log chi tiết hơn
+                var oldGia = ct.Gia;
+                var oldTon = ct.SoLuongTon;
+                var oldKM = ct.MaKM;
+
+                // update SP
                 sp.TenSP = model.TenSP;
                 sp.MoTa = model.MoTa;
                 sp.MaDM = model.MaDM;
                 sp.MaTH = model.MaTH;
-                sp.MaKM = model.MaKM;
                 sp.TrangThai = model.TrangThai;
 
+                // update CTSP
+                ct.TenBienThe = string.IsNullOrWhiteSpace(model.TenBienThe) ? "Default" : model.TenBienThe.Trim();
                 ct.Gia = model.Gia;
                 ct.SoLuongTon = model.TonKho;
-                ct.TenBienThe = string.IsNullOrWhiteSpace(model.TenBienThe) ? "Default" : model.TenBienThe;
 
-                // nếu user chọn thêm ảnh mới
+                if (model.MaKM.HasValue && model.MaKM.Value > 0)
+                {
+                    ct.MaKM = model.MaKM;
+                    var km = db.KHUYENMAIs.Find(model.MaKM.Value);
+                    double pt = km?.PhanTramGiam ?? 0;
+
+                    if (pt > 0)
+                        ct.GiaKhuyenMai = ct.Gia * (decimal)(100 - pt) / 100;
+                    else
+                        ct.GiaKhuyenMai = null;
+                }
+                else
+                {
+                    ct.MaKM = null;
+                    ct.GiaKhuyenMai = null;
+                }
+
                 var files = ImageFiles?.Where(f => f != null && f.ContentLength > 0).ToList();
                 if (files != null && files.Count > 0)
                 {
@@ -365,11 +448,20 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                 }
 
                 db.SaveChanges();
+
+                // LOG
+                AuditLogger.Log(
+                    module: "SanPham",
+                    action: "EDIT",
+                    target: $"CTSP#{ct.MaCTSP}",
+                    note: $"Sửa {sp.TenSP} | Biến thể {ct.TenBienThe} | Giá={ct.Gia} | Tồn={ct.SoLuongTon}"
+                );
+
                 return Json(new { success = true });
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = "Lỗi cập nhật SP: " + ex.Message });
+                return Json(new { success = false, message = "Lỗi cập nhật: " + ex.Message });
             }
         }
 
@@ -382,7 +474,10 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                 var img = db.HINHANHs.Find(id);
                 if (img == null) return Json(new { success = false });
 
-                // xóa file vật lý
+                int maCTSP = img.MaCTSP;
+                var ct = db.CHITIET_SANPHAM.Find(maCTSP);
+                int maSP = ct != null ? ct.MaSP : 0;
+
                 try
                 {
                     if (!string.IsNullOrEmpty(img.DuongDan) &&
@@ -396,6 +491,15 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
 
                 db.HINHANHs.Remove(img);
                 db.SaveChanges();
+
+                // LOG
+                AuditLogger.Log(
+                    module: "SanPham",
+                    action: "DELETE_IMAGE",
+                    target: $"IMG#{id}",
+                    note: $"Xóa ảnh của CTSP#{maCTSP} SP#{maSP}"
+                );
+
                 return Json(new { success = true });
             }
             catch
@@ -404,16 +508,20 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
             }
         }
 
-        // ======================== DELETE PRODUCT ========================
+        // ======================== DELETE VARIANT ========================
         [HttpPost]
-        public JsonResult DeleteProduct(int id)
+        public JsonResult DeleteVariant(int id)
         {
-            var sp = db.SANPHAMs.Find(id);
-            if (sp == null) return Json(new { success = false });
-
-            var ctList = db.CHITIET_SANPHAM.Where(x => x.MaSP == id).ToList();
-            foreach (var ct in ctList)
+            try
             {
+                var ct = db.CHITIET_SANPHAM.Find(id);
+                if (ct == null) return Json(new { success = false });
+
+                var ten = (ct.TenBienThe ?? "Default").Trim().ToLower();
+                bool isDefault = ten == "default";
+
+                int maSP = ct.MaSP;
+
                 var imgs = db.HINHANHs.Where(h => h.MaCTSP == ct.MaCTSP).ToList();
                 foreach (var i in imgs)
                 {
@@ -430,15 +538,67 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
 
                     db.HINHANHs.Remove(i);
                 }
-                db.CHITIET_SANPHAM.Remove(ct);
-            }
 
-            db.SANPHAMs.Remove(sp);
-            db.SaveChanges();
-            return Json(new { success = true });
+                db.CHITIET_SANPHAM.Remove(ct);
+                db.SaveChanges();
+
+                if (isDefault)
+                {
+                    var leftVariants = db.CHITIET_SANPHAM.Where(x => x.MaSP == maSP).ToList();
+                    foreach (var v in leftVariants)
+                    {
+                        var vImgs = db.HINHANHs.Where(h => h.MaCTSP == v.MaCTSP).ToList();
+                        foreach (var img in vImgs)
+                        {
+                            try
+                            {
+                                if (!string.IsNullOrEmpty(img.DuongDan) &&
+                                    img.DuongDan.StartsWith("/Upload/images/product/"))
+                                {
+                                    var oldPath = Server.MapPath(img.DuongDan);
+                                    if (System.IO.File.Exists(oldPath)) System.IO.File.Delete(oldPath);
+                                }
+                            }
+                            catch { }
+
+                            db.HINHANHs.Remove(img);
+                        }
+                        db.CHITIET_SANPHAM.Remove(v);
+                    }
+
+                    var sp = db.SANPHAMs.Find(maSP);
+                    if (sp != null) db.SANPHAMs.Remove(sp);
+
+                    db.SaveChanges();
+
+                    // LOG xóa luôn SP
+                    AuditLogger.Log(
+                        module: "SanPham",
+                        action: "DELETE_PRODUCT",
+                        target: $"SP#{maSP}",
+                        note: "Xóa Default variant => xóa luôn sản phẩm"
+                    );
+                }
+                else
+                {
+                    // LOG xóa variant thường
+                    AuditLogger.Log(
+                        module: "SanPham",
+                        action: "DELETE_VARIANT",
+                        target: $"CTSP#{ct.MaCTSP}",
+                        note: $"Xóa biến thể {ct.TenBienThe} của SP#{maSP}"
+                    );
+                }
+
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
         }
 
-        // ======================== ADD VARIANT TO EXISTING PRODUCT (CÓ KHUYẾN MÃI) ========================
+        // ======================== ADD VARIANT ========================
         [HttpPost]
         public JsonResult AddVariant(AddVariantModel model, IEnumerable<HttpPostedFileBase> ImageFiles)
         {
@@ -452,43 +612,41 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                 if (string.IsNullOrWhiteSpace(tenBienThe))
                     tenBienThe = "Default";
 
-                // ✅ check trùng biến thể trong cùng SP
                 bool existed = db.CHITIET_SANPHAM.Any(x =>
                     x.MaSP == model.MaSP &&
                     (x.TenBienThe ?? "Default") == tenBienThe);
 
                 if (existed)
-                    return Json(new { success = false, message = "Biến thể này đã tồn tại trong sản phẩm!" });
+                    return Json(new { success = false, message = "Biến thể này đã tồn tại!" });
 
                 var files = ImageFiles?.Where(f => f != null && f.ContentLength > 0).ToList();
                 if (files == null || files.Count == 0)
                     return Json(new { success = false, message = "Vui lòng chọn ít nhất 1 ảnh biến thể!" });
 
-                // ✅ lấy % giảm KM nếu có chọn
-                double? pt = null;
+                double pt = 0;
+                decimal? giaSau = null;
+
                 if (model.MaKM.HasValue && model.MaKM.Value > 0)
                 {
                     var km = db.KHUYENMAIs.Find(model.MaKM.Value);
-                    if (km != null) pt = km.PhanTramGiam;
+                    pt = km?.PhanTramGiam ?? 0;
+                    if (pt > 0) giaSau = model.Gia * (decimal)(100 - pt) / 100;
                 }
 
-                decimal? giaSauGiam = null;
-                if (pt.HasValue && pt.Value > 0)
-                    giaSauGiam = model.Gia * (decimal)(100 - pt.Value) / 100;
-
-                // ✅ insert biến thể mới
                 var ct = new CHITIET_SANPHAM
                 {
                     MaSP = model.MaSP,
                     TenBienThe = tenBienThe,
                     Gia = model.Gia,
-                    GiaKhuyenMai = giaSauGiam,   // ✅ KM riêng của biến thể
-                    SoLuongTon = model.TonKho
+                    SoLuongTon = model.TonKho,
+
+                    MaKM = (model.MaKM.HasValue && model.MaKM.Value > 0) ? model.MaKM : null,
+                    GiaKhuyenMai = giaSau
                 };
+
                 db.CHITIET_SANPHAM.Add(ct);
                 db.SaveChanges();
 
-                // ✅ lưu ảnh theo biến thể mới
                 foreach (var f in files)
                 {
                     string url = SaveProductImage(f);
@@ -498,7 +656,16 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                         DuongDan = url
                     });
                 }
+
                 db.SaveChanges();
+
+                // LOG
+                AuditLogger.Log(
+                    module: "SanPham",
+                    action: "ADD_VARIANT",
+                    target: $"SP#{model.MaSP} / CTSP#{ct.MaCTSP}",
+                    note: $"BienThe={ct.TenBienThe} | Gia={ct.Gia} | Ton={ct.SoLuongTon} | KM={ct.MaKM}"
+                );
 
                 return Json(new { success = true });
             }
@@ -507,6 +674,5 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                 return Json(new { success = false, message = "Lỗi thêm biến thể: " + ex.Message });
             }
         }
-
     }
 }

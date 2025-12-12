@@ -3,13 +3,12 @@ using SofiaCosmetics.Models.AdminModels;
 using System;
 using System.Linq;
 using System.Web.Mvc;
+using SofiaCosmetics.Areas.Admin.Helpers;   // ✅ để dùng AuditLogger
 
 namespace SofiaCosmetics.Areas.Admin.Controllers
 {
     public class ThuongHieuController : BaseAdminController
     {
-        //QLMyPhamEntities db = new QLMyPhamEntities();
-
         // ============================
         // LIST + SEARCH + PAGING
         // ============================
@@ -28,8 +27,8 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
             {
                 string kw = search.Trim().ToLower();
                 list = list.Where(x =>
-                    x.TenThuongHieu.ToLower().Contains(kw) ||
-                    x.MoTa.ToLower().Contains(kw) ||
+                    (x.TenThuongHieu ?? "").ToLower().Contains(kw) ||
+                    (x.MoTa ?? "").ToLower().Contains(kw) ||
                     ("th" + x.MaTH.ToString("000")).ToLower().Contains(kw) ||
                     x.MaTH.ToString().Contains(kw)
                 ).ToList();
@@ -38,15 +37,22 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
             ViewBag.Search = search;
 
             int totalPage = (int)Math.Ceiling((double)list.Count / pageSize);
+            if (totalPage < 1) totalPage = 1;
+
+            if (page < 1) page = 1;
+            if (page > totalPage) page = totalPage;
+
             ViewBag.Page = page;
             ViewBag.TotalPage = totalPage;
             ViewBag.PageSize = pageSize;
 
-            list = list.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+            list = list
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
 
             return View(list);
         }
-
 
         // ============================
         // ADD
@@ -64,6 +70,15 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
 
                 db.THUONGHIEUx.Add(th);
                 db.SaveChanges();
+
+                // ✅ LOG: thêm thương hiệu
+                AuditLogger.Log(
+                    module: "ThuongHieu",
+                    action: "CREATE",
+                    target: $"TH#{th.MaTH}",
+                    note: $"TenThuongHieu={th.TenThuongHieu}"
+                );
+
                 return Json(true);
             }
             catch
@@ -99,10 +114,23 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                 var th = db.THUONGHIEUx.Find(model.MaTH);
                 if (th == null) return Json(false);
 
+                // lưu thông tin cũ để ghi log dễ đọc
+                string oldTen = th.TenThuongHieu;
+                string oldMoTa = th.MoTa;
+
                 th.TenThuongHieu = model.TenThuongHieu;
                 th.MoTa = model.MoTa;
 
                 db.SaveChanges();
+
+                // ✅ LOG: sửa thương hiệu
+                AuditLogger.Log(
+                    module: "ThuongHieu",
+                    action: "EDIT",
+                    target: $"TH#{th.MaTH}",
+                    note: $"TenCu={oldTen}, TenMoi={th.TenThuongHieu}"
+                );
+
                 return Json(true);
             }
             catch
@@ -117,15 +145,31 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
         [HttpPost]
         public JsonResult Delete(int id)
         {
-            var th = db.THUONGHIEUx.Find(id);
-            if (th == null) return Json(false);
+            try
+            {
+                var th = db.THUONGHIEUx.Find(id);
+                if (th == null) return Json(false);
 
-            db.THUONGHIEUx.Remove(th);
-            db.SaveChanges();
+                string ten = th.TenThuongHieu;
 
-            return Json(true);
+                db.THUONGHIEUx.Remove(th);
+                db.SaveChanges();
+
+                // ✅ LOG: xóa thương hiệu
+                AuditLogger.Log(
+                    module: "ThuongHieu",
+                    action: "DELETE",
+                    target: $"TH#{id}",
+                    note: $"TenThuongHieu={ten}"
+                );
+
+                return Json(true);
+            }
+            catch
+            {
+                return Json(false);
+            }
         }
-
 
         // ============================
         // DETAILS

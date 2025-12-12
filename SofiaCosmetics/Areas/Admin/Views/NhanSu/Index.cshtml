@@ -1,0 +1,571 @@
+﻿@model IEnumerable<SofiaCosmetics.Models.ADMIN>
+
+@section styles{
+    <link href="~/Content/admin-nhansu.css" rel="stylesheet" />
+}
+
+@{
+    ViewBag.Title = "Quản lý nhân sự";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+
+    int page = ViewBag.Page ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+    string kw = ViewBag.Search ?? "";
+
+    // ✅ chỉ coi là quản lý nếu VaiTro chứa chữ "Quản lý"
+    string role = (ViewBag.ADMIN_ROLE ?? "").ToString();
+    bool isManager = role.ToLower().Contains("quản lý");
+}
+
+<div class="top-action-bar menu-like">
+    <h2 class="page-title">Quản lý nhân sự</h2>
+
+    <div class="search-area menu-like">
+        <input type="text"
+               id="searchBox"
+               placeholder="Tìm theo tên / username / sđt / vai trò..."
+               value="@kw" />
+
+        <button class="btn-search" id="btnSearch" type="button" title="Tìm kiếm">
+            <i class="bi bi-search"></i>
+        </button>
+
+        <a href="/Admin/NhanSu" class="btn-reset" title="Làm mới">
+            <i class="bi bi-arrow-clockwise"></i>
+        </a>
+    </div>
+
+    <div class="action-buttons">
+        @if (isManager)
+        {
+            <button class="btn-add menu-like" onclick="openAddModal()">
+                <i class="bi bi-person-plus-fill"></i> Thêm nhân sự
+            </button>
+
+            <button class="btn-log menu-like" onclick="openLogModal()">
+                <i class="bi bi-clock-history"></i> Lịch sử thao tác
+            </button>
+        }
+    </div>
+</div>
+
+<div class="product-card">
+    <table class="product-table">
+        <thead>
+            <tr>
+                <th style="width:70px">Mã</th>
+                <th style="width:150px">Username</th>
+                <th>Họ tên</th>
+                <th style="width:220px">Email</th>
+                <th style="width:140px">SĐT</th>
+                <th style="width:120px">Vai trò</th>
+                <th style="width:130px">Trạng thái</th>
+                <th style="width:170px" class="text-end">Thao tác</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                foreach (var ns in Model)
+                {
+                    bool isActive = ns.TrangThai == true;
+                    string statusClass = isActive ? "badge-status product-active" : "badge-status product-inactive";
+
+                    <tr>
+                        <td>@ns.MaAdmin</td>
+                        <td>@ns.TenDangNhap</td>
+                        <td>@ns.HoTen</td>
+                        <td>@ns.Email</td>
+                        <td>@ns.SDT</td>
+                        <td>@(ns.VaiTro ?? "Nhân viên")</td>
+
+                        <td>
+                            <span class="@statusClass">
+                                @(isActive ? "Đang hoạt động" : "Ngưng hoạt động")
+                            </span>
+                        </td>
+
+                        <td class="actions-cell text-end">
+                            <div class="actions">
+                                <button class="btn-view btn-icon tooltip-btn"
+                                        data-tip="Xem chi tiết"
+                                        onclick="viewNhanSu(@ns.MaAdmin)">
+                                    <i class="bi bi-eye-fill"></i>
+                                </button>
+
+                                <button class="btn-edit btn-icon tooltip-btn"
+                                        data-tip="Sửa nhân sự"
+                                        onclick="editNhanSu(@ns.MaAdmin)">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+
+                                <button class="btn-delete btn-icon tooltip-btn"
+                                        data-tip="Xóa nhân sự"
+                                        onclick="deleteNhanSu(@ns.MaAdmin)">
+                                    <i class="bi bi-trash3-fill"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="8" class="empty-row">Không có nhân sự nào.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- ===== PAGER ===== -->
+    @if (totalPages > 1)
+    {
+        <div class="pager-wrap">
+            <ul class="pager">
+                <li class="@(page==1?"disabled":"")">
+                    <a href="/Admin/NhanSu?search=@kw&page=1">«</a>
+                </li>
+                <li class="@(page==1?"disabled":"")">
+                    <a href="/Admin/NhanSu?search=@kw&page=@(page-1)">‹</a>
+                </li>
+
+                @for (int i = Math.Max(1, page - 2); i <= Math.Min(totalPages, page + 2); i++)
+                {
+                    <li class="@(i==page?"active":"")">
+                        <a href="/Admin/NhanSu?search=@kw&page=@i">@i</a>
+                    </li>
+                }
+
+                <li class="@(page==totalPages?"disabled":"")">
+                    <a href="/Admin/NhanSu?search=@kw&page=@(page+1)">›</a>
+                </li>
+                <li class="@(page==totalPages?"disabled":"")">
+                    <a href="/Admin/NhanSu?search=@kw&page=@totalPages">»</a>
+                </li>
+            </ul>
+
+            <div class="pager-info">
+                Trang @page / @totalPages — @ViewBag.TotalItems nhân sự
+            </div>
+        </div>
+    }
+</div>
+
+<!-- ================== MODAL ADD ================== -->
+<div id="addModal" class="sp-modal-backdrop" style="display:none;">
+    <div class="sp-modal slide-in-right">
+        <div class="sp-modal-head">
+            <div class="head-left">
+                <div class="sp-modal-badge add">Thêm mới</div>
+                <h3 class="sp-modal-title">Thêm nhân sự</h3>
+            </div>
+            <button class="sp-modal-close" onclick="hideModal('#addModal')">×</button>
+        </div>
+
+        <div class="sp-modal-body">
+            <div class="sp-form-grid-two">
+                <div class="sp-field">
+                    <label class="sp-label">Username <span>*</span></label>
+                    <div class="sp-input">
+                        <i class="bi bi-person"></i>
+                        <input id="add_TenDangNhap" />
+                    </div>
+                </div>
+
+                <div class="sp-field">
+                    <label class="sp-label">Mật khẩu <span>*</span></label>
+                    <div class="sp-input">
+                        <i class="bi bi-key-fill"></i>
+                        <input id="add_MatKhau" type="password" />
+                    </div>
+                </div>
+
+                <div class="sp-field">
+                    <label class="sp-label">Họ tên</label>
+                    <div class="sp-input">
+                        <i class="bi bi-card-text"></i>
+                        <input id="add_HoTen" />
+                    </div>
+                </div>
+
+                <div class="sp-field">
+                    <label class="sp-label">Email</label>
+                    <div class="sp-input">
+                        <i class="bi bi-envelope"></i>
+                        <input id="add_Email" type="email" />
+                    </div>
+                </div>
+
+                <div class="sp-field">
+                    <label class="sp-label">SĐT</label>
+                    <div class="sp-input">
+                        <i class="bi bi-telephone"></i>
+                        <input id="add_SDT" />
+                    </div>
+                </div>
+
+                <div class="sp-field">
+                    <label class="sp-label">Vai trò</label>
+                    <div class="sp-input">
+                        <i class="bi bi-shield-check"></i>
+                        <select id="add_VaiTro" class="sp-select">
+                            <option value="Nhân viên">Nhân viên</option>
+                            <option value="Quản lý">Quản lý</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="sp-field full">
+                    <div class="sp-switch-row">
+                        <div>
+                            <div class="sp-switch-title">Trạng thái hoạt động</div>
+                            <div class="sp-switch-sub">Bật/tắt tài khoản nhân sự</div>
+                        </div>
+                        <label class="sp-switch">
+                            <input type="checkbox" id="add_TrangThai" checked />
+                            <span class="sp-switch-ui"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sp-modal-foot">
+            <button class="sp-btn primary" onclick="saveAdd()">
+                <i class="bi bi-check2-circle"></i> Thêm nhân sự
+            </button>
+            <button class="sp-btn ghost" onclick="hideModal('#addModal')">Hủy</button>
+        </div>
+    </div>
+</div>
+
+<!-- ================== MODAL EDIT ================== -->
+<div id="editModal" class="sp-modal-backdrop" style="display:none;">
+    <div class="sp-modal slide-in-right">
+        <div class="sp-modal-head">
+            <div class="head-left">
+                <div class="sp-modal-badge edit">Chỉnh sửa</div>
+                <h3 class="sp-modal-title">Sửa nhân sự</h3>
+            </div>
+            <button class="sp-modal-close" onclick="hideModal('#editModal')">×</button>
+        </div>
+
+        <input type="hidden" id="edit_MaAdmin" />
+
+        <div class="sp-modal-body">
+            <div class="sp-form-grid-two">
+                <div class="sp-field">
+                    <label class="sp-label">Username <span>*</span></label>
+                    <div class="sp-input">
+                        <i class="bi bi-person"></i>
+                        <input id="edit_TenDangNhap" />
+                    </div>
+                </div>
+
+                <div class="sp-field">
+                    <label class="sp-label">Mật khẩu mới</label>
+                    <div class="sp-input">
+                        <i class="bi bi-key-fill"></i>
+                        <input id="edit_MatKhau" type="password" placeholder="Bỏ trống nếu giữ cũ" />
+                    </div>
+                </div>
+
+                <div class="sp-field">
+                    <label class="sp-label">Họ tên</label>
+                    <div class="sp-input">
+                        <i class="bi bi-card-text"></i>
+                        <input id="edit_HoTen" />
+                    </div>
+                </div>
+
+                <div class="sp-field">
+                    <label class="sp-label">Email</label>
+                    <div class="sp-input">
+                        <i class="bi bi-envelope"></i>
+                        <input id="edit_Email" type="email" />
+                    </div>
+                </div>
+
+                <div class="sp-field">
+                    <label class="sp-label">SĐT</label>
+                    <div class="sp-input">
+                        <i class="bi bi-telephone"></i>
+                        <input id="edit_SDT" />
+                    </div>
+                </div>
+
+                <div class="sp-field">
+                    <label class="sp-label">Vai trò</label>
+                    <div class="sp-input">
+                        <i class="bi bi-shield-check"></i>
+                        <select id="edit_VaiTro" class="sp-select">
+                            <option value="Nhân viên">Nhân viên</option>
+                            <option value="Quản lý">Quản lý</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="sp-field full">
+                    <div class="sp-switch-row">
+                        <div>
+                            <div class="sp-switch-title">Trạng thái hoạt động</div>
+                            <div class="sp-switch-sub">Bật/tắt tài khoản nhân sự</div>
+                        </div>
+                        <label class="sp-switch">
+                            <input type="checkbox" id="edit_TrangThai" />
+                            <span class="sp-switch-ui"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sp-modal-foot">
+            <button class="sp-btn primary" onclick="saveEdit()">
+                <i class="bi bi-save2"></i> Lưu thay đổi
+            </button>
+            <button class="sp-btn ghost" onclick="hideModal('#editModal')">Hủy</button>
+        </div>
+    </div>
+</div>
+
+<!-- ================== MODAL DETAIL ================== -->
+<div id="detailModal" class="sp-modal-backdrop" style="display:none;">
+    <div class="sp-modal slide-in-right">
+        <div class="sp-modal-head">
+            <div class="head-left">
+                <div class="sp-modal-badge">Chi tiết</div>
+                <h3 class="sp-modal-title" id="d_Title">Nhân sự</h3>
+            </div>
+            <button class="sp-modal-close" onclick="hideModal('#detailModal')">×</button>
+        </div>
+
+        <div class="sp-modal-body">
+            <div class="detail-grid">
+                <div class="detail-item"><b>Mã:</b> <span id="d_MaAdmin"></span></div>
+                <div class="detail-item"><b>Username:</b> <span id="d_TenDangNhap"></span></div>
+
+                <div class="detail-item"><b>Họ tên:</b> <span id="d_HoTen"></span></div>
+                <div class="detail-item"><b>Email:</b> <span id="d_Email"></span></div>
+
+                <div class="detail-item"><b>SĐT:</b> <span id="d_SDT"></span></div>
+                <div class="detail-item"><b>Vai trò:</b> <span id="d_VaiTro"></span></div>
+
+                <div class="detail-item full"><b>Trạng thái:</b> <span id="d_TrangThai"></span></div>
+            </div>
+        </div>
+
+        <div class="sp-modal-foot">
+            <button class="sp-btn ghost" onclick="hideModal('#detailModal')">Đóng</button>
+        </div>
+    </div>
+</div>
+
+<!-- ================== MODAL LOG ================== -->
+<div id="logModal" class="sp-modal-backdrop" style="display:none;">
+    <div class="sp-modal slide-in-right">
+        <div class="sp-modal-head">
+            <div class="head-left">
+                <div class="sp-modal-badge">Lịch sử nhân sự</div>
+                <h3 class="sp-modal-title">Lịch sử thao tác nhân sự</h3>
+            </div>
+            <button class="sp-modal-close" onclick="hideModal('#logModal')">×</button>
+        </div>
+
+        <div class="sp-modal-body">
+            <div id="logList" style="font-size:14px; line-height:1.7;"></div>
+        </div>
+
+        <div class="sp-modal-foot">
+            <button class="sp-btn ghost" onclick="hideModal('#logModal')">Đóng</button>
+        </div>
+    </div>
+</div>
+
+@section scripts{
+    <script>
+        // ===== MODAL COMMON =====
+        function showModal(selector) {
+            const $bg = $(selector);
+            $bg.css("display", "flex");
+            setTimeout(() => $bg.find(".sp-modal").addClass("active"), 10);
+        }
+        function hideModal(selector) {
+            const $bg = $(selector);
+            $bg.find(".sp-modal").removeClass("active");
+            setTimeout(() => $bg.css("display", "none"), 180);
+        }
+
+        // SEARCH
+        $("#btnSearch").click(function () {
+            let kw = $("#searchBox").val().trim();
+            window.location.href = "/Admin/NhanSu?search=" + encodeURIComponent(kw);
+        });
+        $("#searchBox").keypress(function (e) {
+            if (e.which === 13) $("#btnSearch").click();
+        });
+
+        // OPEN ADD
+        function openAddModal() {
+            $("#add_TenDangNhap,#add_MatKhau,#add_HoTen,#add_Email,#add_SDT").val("");
+            $("#add_VaiTro").val("Nhân viên");
+            $("#add_TrangThai").prop("checked", true);
+            showModal("#addModal");
+        }
+
+        // VIEW DETAIL
+        function viewNhanSu(id) {
+            $.get("/Admin/NhanSu/GetNhanSu", { id: id }, function (data) {
+                if (!data) return;
+
+                $("#d_Title").text(data.HoTen || data.TenDangNhap);
+
+                $("#d_MaAdmin").text(data.MaAdmin);
+                $("#d_TenDangNhap").text(data.TenDangNhap);
+                $("#d_HoTen").text(data.HoTen || "-");
+                $("#d_Email").text(data.Email || "-");
+                $("#d_SDT").text(data.SDT || "-");
+                $("#d_VaiTro").text(data.VaiTro || "Nhân viên");
+                $("#d_TrangThai").text(data.TrangThai ? "Đang hoạt động" : "Ngưng hoạt động");
+
+                showModal("#detailModal");
+            });
+        }
+
+        // EDIT
+        function editNhanSu(id) {
+            $.get("/Admin/NhanSu/GetNhanSu", { id: id }, function (data) {
+                if (!data) return;
+
+                $("#edit_MaAdmin").val(data.MaAdmin);
+                $("#edit_TenDangNhap").val(data.TenDangNhap);
+                $("#edit_MatKhau").val("");
+                $("#edit_HoTen").val(data.HoTen);
+                $("#edit_Email").val(data.Email);
+                $("#edit_SDT").val(data.SDT);
+                $("#edit_VaiTro").val(data.VaiTro || "Nhân viên");
+                $("#edit_TrangThai").prop("checked", data.TrangThai === true);
+
+                showModal("#editModal");
+            });
+        }
+
+        function validateAdd() {
+            let u = $("#add_TenDangNhap").val().trim();
+            let p = $("#add_MatKhau").val().trim();
+            if (!u) { Swal.fire("Thiếu username!", "", "warning"); return false; }
+            if (!p) { Swal.fire("Thiếu mật khẩu!", "", "warning"); return false; }
+            return true;
+        }
+
+        function validateEdit() {
+            let u = $("#edit_TenDangNhap").val().trim();
+            if (!u) { Swal.fire("Thiếu username!", "", "warning"); return false; }
+            return true;
+        }
+
+        // SAVE ADD
+        function saveAdd() {
+            if (!validateAdd()) return;
+
+            const fd = new FormData();
+            fd.append("TenDangNhap", $("#add_TenDangNhap").val().trim());
+            fd.append("MatKhau", $("#add_MatKhau").val().trim());
+            fd.append("HoTen", $("#add_HoTen").val().trim());
+            fd.append("Email", $("#add_Email").val().trim());
+            fd.append("SDT", $("#add_SDT").val().trim());
+            fd.append("VaiTro", $("#add_VaiTro").val());
+            fd.append("TrangThai", $("#add_TrangThai").is(":checked"));
+
+            $.ajax({
+                url: "/Admin/NhanSu/Create",
+                method: "POST",
+                data: fd,
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.success) {
+                        hideModal("#addModal");
+                        Swal.fire("Thành công!", "Đã thêm nhân sự.", "success")
+                            .then(() => location.reload());
+                    } else {
+                        Swal.fire("Lỗi!", res.message || "Không thể thêm nhân sự!", "error");
+                    }
+                }
+            });
+        }
+
+        // SAVE EDIT
+        function saveEdit() {
+            if (!validateEdit()) return;
+
+            const fd = new FormData();
+            fd.append("MaAdmin", $("#edit_MaAdmin").val());
+            fd.append("TenDangNhap", $("#edit_TenDangNhap").val().trim());
+            fd.append("MatKhau", $("#edit_MatKhau").val().trim());
+            fd.append("HoTen", $("#edit_HoTen").val().trim());
+            fd.append("Email", $("#edit_Email").val().trim());
+            fd.append("SDT", $("#edit_SDT").val().trim());
+            fd.append("VaiTro", $("#edit_VaiTro").val());
+            fd.append("TrangThai", $("#edit_TrangThai").is(":checked"));
+
+            $.ajax({
+                url: "/Admin/NhanSu/Edit",
+                method: "POST",
+                data: fd,
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.success) {
+                        hideModal("#editModal");
+                        Swal.fire("Thành công!", "Đã cập nhật nhân sự.", "success")
+                            .then(() => location.reload());
+                    } else {
+                        Swal.fire("Lỗi!", res.message || "Không thể cập nhật!", "error");
+                    }
+                }
+            });
+        }
+
+        // DELETE
+        function deleteNhanSu(id) {
+            Swal.fire({
+                title: "Xóa nhân sự?",
+                text: "Bạn chắc chắn muốn xóa nhân sự này?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Xóa",
+                cancelButtonText: "Hủy"
+            }).then(rs => {
+                if (!rs.isConfirmed) return;
+
+                $.post("/Admin/NhanSu/Delete", { id: id }, function (res) {
+                    if (res.success) {
+                        Swal.fire("Đã xóa!", "", "success")
+                            .then(() => location.reload());
+                    } else {
+                        Swal.fire("Lỗi!", res.message || "Không xóa được!", "error");
+                    }
+                });
+            });
+        }
+
+        // LOG MODAL
+        function openLogModal() {
+            $("#logList").html("Đang tải log...");
+            $.get("/Admin/NhanSu/GetNhanSuLogs", function (lines) {
+                if (!lines || lines.length === 0) {
+                    $("#logList").html("<div class='empty-row'>Chưa có log.</div>");
+                } else {
+                    let html = lines.map(x =>
+                        `<div style="padding:6px 0; border-bottom:1px dashed #eee">${x}</div>`
+                    ).join("");
+                    $("#logList").html(html);
+                }
+                showModal("#logModal");
+            });
+        }
+    </script>
+}

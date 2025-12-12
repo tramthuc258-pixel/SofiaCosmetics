@@ -16,6 +16,7 @@ namespace SofiaCosmetics.Models
     {
         public KHUYENMAI()
         {
+            this.CHITIET_SANPHAM = new HashSet<CHITIET_SANPHAM>();
             this.SANPHAMs = new HashSet<SANPHAM>();
         }
     
@@ -26,7 +27,10 @@ namespace SofiaCosmetics.Models
         public Nullable<System.DateTime> NgayBatDau { get; set; }
         public Nullable<System.DateTime> NgayKetThuc { get; set; }
         public Nullable<bool> TrangThai { get; set; }
+        public string MaCode { get; set; }
+        public Nullable<bool> IsNewUserOnly { get; set; }
     
+        public virtual ICollection<CHITIET_SANPHAM> CHITIET_SANPHAM { get; set; }
         public virtual ICollection<SANPHAM> SANPHAMs { get; set; }
     }
 }

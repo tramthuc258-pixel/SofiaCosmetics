@@ -48,6 +48,9 @@
     <Reference Include="Antlr3.Runtime, Version=3.5.0.2, Culture=neutral, PublicKeyToken=eb42632606e9261f, processorArchitecture=MSIL">
       <HintPath>..\packages\Antlr.3.5.0.2\lib\Antlr3.Runtime.dll</HintPath>
     </Reference>
+    <Reference Include="CKFinder">
+      <HintPath>..\..\NguyenHoangTruc.SachOnline\NguyenHoangTruc.SachOnline\ckfinder\bin\Debug\CKFinder.dll</HintPath>
+    </Reference>
     <Reference Include="EntityFramework, Version=5.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <HintPath>..\packages\EntityFramework.5.0.0\lib\net45\EntityFramework.dll</HintPath>
     </Reference>
@@ -56,6 +59,7 @@
     </Reference>
     <Reference Include="Microsoft.CodeDom.Providers.DotNetCompilerPlatform, Version=2.0.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\lib\net45\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Microsoft.IO.RecyclableMemoryStream, Version=3.0.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
@@ -148,12 +152,14 @@
     <Compile Include="App_Start\FilterConfig.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="Areas\Admin\AdminAreaRegistration.cs" />
+    <Compile Include="Areas\Admin\Controllers\AuditController.cs" />
     <Compile Include="Areas\Admin\Controllers\BaseAdminController.cs" />
     <Compile Include="Areas\Admin\Controllers\DangNhapController.cs" />
     <Compile Include="Areas\Admin\Controllers\DonHangController.cs" />
     <Compile Include="Areas\Admin\Controllers\KhachHangController.cs" />
     <Compile Include="Areas\Admin\Controllers\KhuyenMaiController.cs" />
     <Compile Include="Areas\Admin\Controllers\MenuController.cs" />
+    <Compile Include="Areas\Admin\Controllers\NhanSuController.cs" />
     <Compile Include="Areas\Admin\Controllers\PhanTichController.cs" />
     <Compile Include="Areas\Admin\Controllers\SanPhamController.cs" />
     <Compile Include="Areas\Admin\Controllers\SliderController.cs" />
@@ -161,6 +167,8 @@
     <Compile Include="Areas\Admin\Controllers\TinTucController.cs" />
     <Compile Include="Areas\Admin\Controllers\TrangChuController.cs" />
     <Compile Include="Areas\Admin\Filters\AdminAuthFilter.cs" />
+    <Compile Include="Areas\Admin\Helpers\AuditLogger.cs" />
+    <Compile Include="Areas\Admin\Helpers\PermissionConfig.cs" />
     <Compile Include="Controllers\CartController.cs" />
     <Compile Include="Controllers\CheckoutController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
@@ -267,6 +275,7 @@
     <Content Include="bin\Antlr3.Runtime.dll" />
     <Content Include="bin\Antlr3.Runtime.pdb" />
     <Content Include="bin\CKFinder.dll" />
+    <Content Include="bin\CKFinder.pdb" />
     <Content Include="bin\EntityFramework.dll" />
     <Content Include="bin\EntityFramework.xml" />
     <Content Include="bin\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.dll" />
@@ -1229,6 +1238,7 @@
     <Content Include="Content\admin-khachhang.css" />
     <Content Include="Content\admin-khuyenmai.css" />
     <Content Include="Content\admin-menu.css" />
+    <Content Include="Content\admin-nhansu.css" />
     <Content Include="Content\admin-phantich.css" />
     <Content Include="Content\admin-sanpham.css" />
     <Content Include="Content\admin-slider.css" />
@@ -1674,6 +1684,9 @@
     <Content Include="Models\QLMyPham.edmx.diagram">
       <DependentUpon>QLMyPham.edmx</DependentUpon>
     </Content>
+    <Content Include="Areas\Admin\Views\NhanSu\Index.cshtml" />
+    <Content Include="Areas\Admin\Views\Shared\NoPermission.cshtml" />
+    <Content Include="Areas\Admin\Views\Audit\Index.cshtml" />
     <None Include="Scripts\jquery-3.7.0.intellisense.js" />
     <Content Include="Scripts\jquery-3.7.0.js" />
     <Content Include="Scripts\jquery-3.7.0.min.js" />

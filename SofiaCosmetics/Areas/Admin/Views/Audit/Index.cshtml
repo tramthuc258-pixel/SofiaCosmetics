@@ -1,0 +1,37 @@
+﻿@{
+    ViewBag.Title = "Lịch sử thao tác";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<div class="card-soft">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h4 class="mb-0">Lịch sử thao tác hệ thống</h4>
+        <button class="btn btn-sm btn-primary-soft" onclick="loadLogs()">
+            <i class="bi bi-arrow-clockwise me-1"></i> Tải lại
+        </button>
+    </div>
+
+    <div id="logBox"
+         style="font-size:14px; line-height:1.7; max-height:70vh; overflow:auto; background:#fff; padding:12px; border-radius:10px;">
+        Chưa có log.
+    </div>
+</div>
+
+<script>
+    function loadLogs() {
+        $("#logBox").html("Đang tải log...");
+        $.get("/Admin/Audit/GetLogs", function (lines) {
+            if (!lines || lines.length === 0) {
+                $("#logBox").html("<div class='text-muted'>Chưa có log.</div>");
+                return;
+            }
+            let html = lines.map(x =>
+                `<div style="padding:6px 0;border-bottom:1px dashed #eee">${x}</div>`
+            ).join("");
+            $("#logBox").html(html);
+        });
+    }
+
+    // auto load khi mở trang
+    loadLogs();
+</script>

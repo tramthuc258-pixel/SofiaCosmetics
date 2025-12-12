@@ -1,4 +1,4 @@
-﻿// T4 code generation is enabled for model 'D:\WEB\SofiaCosmetics\SofiaCosmetics\SofiaCosmetics\Models\QLMyPham.edmx'. 
+﻿// T4 code generation is enabled for model 'D:\TH-LTWeb\LTW_baocao\SofiaCosmetics\Models\QLMyPham.edmx'. 
 // To enable legacy code generation, change the value of the 'Code Generation Strategy' designer
 // property to 'Legacy ObjectContext'. This property is available in the Properties Window when the model
 // is open in the designer.

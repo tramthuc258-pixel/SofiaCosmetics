@@ -27,10 +27,12 @@ namespace SofiaCosmetics.Models
         public decimal Gia { get; set; }
         public Nullable<decimal> GiaKhuyenMai { get; set; }
         public Nullable<int> SoLuongTon { get; set; }
+        public Nullable<int> MaKM { get; set; }
     
         public virtual SANPHAM SANPHAM { get; set; }
         public virtual ICollection<CHITIETDONHANG> CHITIETDONHANGs { get; set; }
         public virtual ICollection<CHITIETGIOHANG> CHITIETGIOHANGs { get; set; }
         public virtual ICollection<HINHANH> HINHANHs { get; set; }
+        public virtual KHUYENMAI KHUYENMAI { get; set; }
     }
 }

@@ -382,11 +382,11 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.post("/Admin/DonHang/Delete", { id }, function (res) {
-                        if (res === true) {
+                        if (res === true || res.success === true) {
                             Swal.fire("Đã xóa!", "Đơn hàng đã được xóa.", "success")
                                 .then(() => location.reload());
                         } else {
-                            Swal.fire("Lỗi!", "Không thể xóa đơn hàng!", "error");
+                            Swal.fire("Lỗi!", res.message || "Không thể xóa đơn hàng!", "error");
                         }
                     });
                 }

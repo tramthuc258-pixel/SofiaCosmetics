@@ -1,6 +1,10 @@
-﻿@{
+﻿@using SofiaCosmetics.Areas.Admin.Helpers
+
+@{
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
     var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+
+    var allowed = ViewBag.AllowedModules as List<string> ?? new List<string>();
 
     Func<string, string, string> isActive = (controller, action) =>
     {
@@ -9,6 +13,11 @@
 
         return (currentController == controller && currentAction == action) ? "active" : "";
     };
+
+    Func<string, bool> canSee = (controller) =>
+    {
+        return PermissionConfig.HasPermission(allowed, controller);
+    };
 }
 
 <div class="sidebar">
@@ -16,63 +25,91 @@
         🧴 Quản trị mỹ phẩm
     </div>
 
-    <a href="@Url.Action("Index","TrangChu", new { area="Admin"})"
-       class="@isActive("TrangChu","Index")">
-        <i class="bi bi-layout-text-sidebar"></i> Bảng điều khiển
-    </a>
+    @if (canSee(AdminModules.TrangChu))
+    {
+        <a href="@Url.Action("Index","TrangChu", new { area="Admin"})"
+           class="@isActive("TrangChu","Index")">
+            <i class="bi bi-layout-text-sidebar"></i> Bảng điều khiển
+        </a>
+    }
 
-    <a href="@Url.Action("Index","SanPham", new { area="Admin"})"
-       class="@isActive("SanPham","Index")">
-        <i class="bi bi-bag"></i> Sản phẩm
-    </a>
+    @if (canSee(AdminModules.SanPham))
+    {
+        <a href="@Url.Action("Index","SanPham", new { area="Admin"})"
+           class="@isActive("SanPham","Index")">
+            <i class="bi bi-bag"></i> Sản phẩm
+        </a>
+    }
 
-    <a href="@Url.Action("Index","DonHang", new { area="Admin"})"
-       class="@isActive("DonHang","Index")">
-        <i class="bi bi-receipt"></i> Đơn hàng
-    </a>
+    @if (canSee(AdminModules.DonHang))
+    {
+        <a href="@Url.Action("Index","DonHang", new { area="Admin"})"
+           class="@isActive("DonHang","Index")">
+            <i class="bi bi-receipt"></i> Đơn hàng
+        </a>
+    }
 
-    <a href="@Url.Action("Index","KhachHang", new { area="Admin"})"
-       class="@isActive("KhachHang","Index")">
-        <i class="bi bi-people"></i> Khách hàng
-    </a>
+    @if (canSee(AdminModules.KhachHang))
+    {
+        <a href="@Url.Action("Index","KhachHang", new { area="Admin"})"
+           class="@isActive("KhachHang","Index")">
+            <i class="bi bi-people"></i> Khách hàng
+        </a>
+    }
 
-    <a href="@Url.Action("Index","Menu", new { area="Admin"})"
-       class="@isActive("Menu","Index")">
-        <i class="bi bi-grid"></i> Menu
-    </a>
+    @if (canSee(AdminModules.Menu))
+    {
+        <a href="@Url.Action("Index","Menu", new { area="Admin"})"
+           class="@isActive("Menu","Index")">
+            <i class="bi bi-grid"></i> Menu
+        </a>
+    }
 
-    <a href="@Url.Action("Index","ThuongHieu", new { area="Admin"})"
-       class="@isActive("ThuongHieu","Index")">
-        <i class="bi bi-shop"></i> Thương hiệu
-    </a>
+    @if (canSee(AdminModules.ThuongHieu))
+    {
+        <a href="@Url.Action("Index","ThuongHieu", new { area="Admin"})"
+           class="@isActive("ThuongHieu","Index")">
+            <i class="bi bi-shop"></i> Thương hiệu
+        </a>
+    }
 
-    <a href="@Url.Action("Index","KhuyenMai", new { area="Admin"})"
-       class="@isActive("KhuyenMai","Index")">
-        <i class="bi bi-tags"></i> Khuyến mãi
-    </a>
+    @if (canSee(AdminModules.KhuyenMai))
+    {
+        <a href="@Url.Action("Index","KhuyenMai", new { area="Admin"})"
+           class="@isActive("KhuyenMai","Index")">
+            <i class="bi bi-tags"></i> Khuyến mãi
+        </a>
+    }
 
-    <a href="@Url.Action("Index","TinTuc", new { area="Admin"})"
-       class="@isActive("TinTuc","Index")">
-        <i class="bi bi-newspaper"></i> Tin tức
-    </a>
+    @if (canSee(AdminModules.TinTuc))
+    {
+        <a href="@Url.Action("Index","TinTuc", new { area="Admin"})"
+           class="@isActive("TinTuc","Index")">
+            <i class="bi bi-newspaper"></i> Tin tức
+        </a>
+    }
 
-    <a href="@Url.Action("Index","Slider", new { area="Admin"})"
-       class="@isActive("Slider","Index")">
-        <i class="bi bi-sliders"></i> Slider
-    </a>
+    @if (canSee(AdminModules.Slider))
+    {
+        <a href="@Url.Action("Index","Slider", new { area="Admin"})"
+           class="@isActive("Slider","Index")">
+            <i class="bi bi-sliders"></i> Slider
+        </a>
+    }
 
-    <a href="@Url.Action("Index","PhanTich", new { area="Admin"})"
-       class="@isActive("PhanTich","Index")">
-        <i class="bi bi-bar-chart"></i> Phân tích
-    </a>
+    @if (canSee(AdminModules.PhanTich))
+    {
+        <a href="@Url.Action("Index","PhanTich", new { area="Admin"})"
+           class="@isActive("PhanTich","Index")">
+            <i class="bi bi-bar-chart"></i> Phân tích
+        </a>
+    }
 
-    @*<a href="@Url.Action("Index","NoiDung", new { area="Admin"})"
-           class="@isActive("NoiDung","Index")">
-            <i class="bi bi-file-text"></i> Nội dung
-        </a>*@
-
-    @*<a href="@Url.Action("Index","CaiDat", new { area="Admin"})"
-           class="@isActive("CaiDat","Index")">
-            <i class="bi bi-gear"></i> Cài đặt
-        </a>*@
+    @if (canSee(AdminModules.NhanSu))
+    {
+        <a href="@Url.Action("Index","NhanSu", new { area="Admin"})"
+           class="@isActive("NhanSu","Index")">
+            <i class="bi bi-person-workspace"></i> Nhân sự
+        </a>
+    }
 </div>

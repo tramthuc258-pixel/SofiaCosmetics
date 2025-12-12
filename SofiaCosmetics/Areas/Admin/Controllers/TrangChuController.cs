@@ -9,9 +9,8 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
 {
     public class TrangChuController : BaseAdminController
     {
-        //private QLMyPhamEntities db = new QLMyPhamEntities();
 
-        // ===== DTO THÔNG BÁO (EF-safe) =====
+
         public class NotiDto
         {
             public string Title { get; set; }
@@ -20,29 +19,23 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
             public DateTime Time { get; set; }
         }
 
-        // ================= DASHBOARD =================
+
         public ActionResult Index(string range = "today")
         {
             ViewBag.Range = range;
 
             try
             {
-                // ========== NAVBAR DATA ==========
-                int? adminId = Session["ADMIN_ID"] as int?;
-                if (adminId == null) adminId = 1; // demo fallback, nhớ bỏ khi login set session
-
-                var admin = db.ADMINs.FirstOrDefault(a => a.MaAdmin == adminId);
-                ViewBag.AdminInfo = admin;
-
+                // ======= NOTI =======
                 var notiList = BuildNotifications();
                 ViewBag.NotiList = notiList;
                 ViewBag.NotiCount = notiList.Count;
 
-                // ========== DASHBOARD DATA ==========
+                // ======= RANGE =======
                 var today = DateTime.Today;
                 var tomorrow = today.AddDays(1);
 
-                // xác định thời gian theo range
+
                 DateTime fromDate;
                 DateTime toDate = tomorrow;
 
@@ -62,19 +55,19 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                         break;
                 }
 
-                // 1) DOANH THU THEO RANGE (chỉ đơn hoàn thành)
+                // ======= DOANH THU =======
                 decimal doanhThu = db.DONHANGs
                     .Where(d => d.NgayDat >= fromDate && d.NgayDat < toDate
                              && d.TrangThai == "Hoàn thành")
                     .Sum(d => (decimal?)d.TongTien) ?? 0;
                 ViewBag.DoanhThuHomNay = doanhThu;
 
-                // 2) KHÁCH MỚI THEO RANGE
+                // ======= KHÁCH MỚI =======
                 int khachMoiRange = db.KHACHHANGs
                     .Count(k => k.NgayTao >= fromDate && k.NgayTao < toDate);
                 ViewBag.KhachMoiHomNay = khachMoiRange;
 
-                // 3) THỐNG KÊ ĐƠN HÀNG TOÀN HỆ THỐNG
+                // ======= ĐƠN HÀNG =======
                 int choXuLy = db.DONHANGs.Count(d => d.TrangThai == "Chờ xác nhận"
                                                  || d.TrangThai == "Chờ xử lý");
                 int dangGiao = db.DONHANGs.Count(d => d.TrangThai == "Đang giao");
@@ -84,7 +77,7 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                 ViewBag.DangGiao = dangGiao;
                 ViewBag.HoanThanh = hoanThanh;
 
-                // 4) TOP SẢN PHẨM BÁN CHẠY (6 SP) -> DTO SanPhamBanChay
+                // ======= TOP SP BÁN CHẠY =======
                 var topSanPham =
                     (from sp in db.SANPHAMs
                      join ctsp in db.CHITIET_SANPHAM on sp.MaSP equals ctsp.MaSP
@@ -108,7 +101,7 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                      .Take(6)
                      .ToList();
 
-                var dtoList = topSanPham.Select(x => new SanPhamBanChay
+                ViewBag.TopSanPham = topSanPham.Select(x => new SanPhamBanChay
                 {
                     MaSP = x.MaSP,
                     TenSP = x.TenSP,
@@ -116,9 +109,7 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                     HinhAnh = x.HinhAnh
                 }).ToList();
 
-                ViewBag.TopSanPham = dtoList;
-
-                // 5) BIỂU ĐỒ DOANH THU
+                // ======= CHART =======
                 if (range == "today")
                 {
                     ViewBag.DoanhThuLabels = new List<string> { today.ToString("dd/MM") };
@@ -142,6 +133,8 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                     var values = new List<decimal>();
 
                     int totalDays = (toDate.Date - fromDate.Date).Days;
+
+
                     for (int i = 0; i < totalDays; i++)
                     {
                         var day = fromDate.AddDays(i);
@@ -155,8 +148,8 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                     ViewBag.DoanhThuValues = values;
                 }
 
-                // 6) SẢN PHẨM SẮP HẾT
-                var sanPhamSapHet = db.CHITIET_SANPHAM
+                // ======= SP SẮP HẾT =======
+                ViewBag.SanPhamSapHet = db.CHITIET_SANPHAM
                     .Where(ct => ct.SoLuongTon < 5)
                     .OrderBy(ct => ct.SoLuongTon)
                     .Take(5)
@@ -167,10 +160,9 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                         Gia = ct.GiaKhuyenMai ?? ct.Gia
                     })
                     .ToList();
-                ViewBag.SanPhamSapHet = sanPhamSapHet;
 
-                // 7) ĐƠN HÀNG GẦN ĐÂY
-                var donGanDay = db.DONHANGs
+                // ======= ĐƠN GẦN ĐÂY =======
+                ViewBag.DonGanDay = db.DONHANGs
                     .OrderByDescending(d => d.NgayDat)
                     .Take(5)
                     .Select(d => new DonGanDayDto
@@ -180,7 +172,6 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                         TrangThai = d.TrangThai
                     })
                     .ToList();
-                ViewBag.DonGanDay = donGanDay;
             }
             catch (Exception ex)
             {
@@ -189,21 +180,16 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                 ViewBag.TopSanPham = new List<SanPhamBanChay>();
                 ViewBag.NotiList = new List<NotiDto>();
                 ViewBag.NotiCount = 0;
-                ViewBag.AdminInfo = null;
 
                 ViewBag.DoanhThuLabels = new List<string>();
                 ViewBag.DoanhThuValues = new List<decimal>();
-                ViewBag.DoanhThuHomNay = 0m;
-                ViewBag.KhachMoiHomNay = 0;
-                ViewBag.ChoXuLy = ViewBag.DangGiao = ViewBag.HoanThanh = 0;
-                ViewBag.SanPhamSapHet = new List<object>();
-                ViewBag.DonGanDay = new List<object>();
+
             }
 
             return View();
         }
 
-        // ================== NOTI JSON auto refresh ==================
+
         public JsonResult GetNotifications()
         {
             var notiList = BuildNotifications();
@@ -220,12 +206,12 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
             }, JsonRequestBehavior.AllowGet);
         }
 
-        // helper build notifications
+
         private List<NotiDto> BuildNotifications()
         {
             var list = new List<NotiDto>();
 
-            // Đơn chờ xử lý
+
             var donMoi = db.DONHANGs
                 .Where(d => d.TrangThai == "Chờ xác nhận" || d.TrangThai == "Chờ xử lý")
                 .OrderByDescending(d => d.NgayDat)
@@ -237,12 +223,11 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                     SubTitle = "Mã đơn #" + d.MaDH + " • " + d.KHACHHANG.HoTen,
                     Url = "/Admin/DonHang/Index?status=pending",
                     Time = d.NgayDat ?? DateTime.Now
-                })
-                .ToList();
+                });
 
             list.AddRange(donMoi);
 
-            // Khách mới hôm nay
+
             var today = DateTime.Today;
             var tomorrow = today.AddDays(1);
 
@@ -257,23 +242,19 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
                     SubTitle = k.HoTen + " vừa đăng ký",
                     Url = "/Admin/KhachHang/Index",
                     Time = k.NgayTao ?? DateTime.Now
-                })
-                .ToList();
+                });
 
             list.AddRange(khachMoi);
 
             return list.OrderByDescending(x => x.Time).ToList();
         }
 
-        // ================== ADMIN INFO JSON ==================
+        // ===== ADMIN INFO =====
         public JsonResult GetAdminInfo()
         {
-            int? adminId = Session["ADMIN_ID"] as int?;
-            if (adminId == null) adminId = 1; // fallback demo
-
-            var admin = db.ADMINs.FirstOrDefault(a => a.MaAdmin == adminId);
-            if (admin == null)
-                return Json(new { ok = false }, JsonRequestBehavior.AllowGet);
+            int maAdmin = (int)Session["ADMIN_LOGIN"];
+            var admin = db.ADMINs.FirstOrDefault(a => a.MaAdmin == maAdmin);
+            if (admin == null) return Json(new { ok = false }, JsonRequestBehavior.AllowGet);
 
             return Json(new
             {
@@ -293,31 +274,25 @@ namespace SofiaCosmetics.Areas.Admin.Controllers
         [HttpPost]
         public JsonResult UpdateAdminInfo(string hoTen, string email, string sdt)
         {
-            int? adminId = Session["ADMIN_ID"] as int?;
-            if (adminId == null) adminId = 1;
-
-            var admin = db.ADMINs.FirstOrDefault(a => a.MaAdmin == adminId);
-            if (admin == null)
-                return Json(new { ok = false, msg = "Không tìm thấy admin" });
+            int maAdmin = (int)Session["ADMIN_LOGIN"];
+            var admin = db.ADMINs.FirstOrDefault(a => a.MaAdmin == maAdmin);
+            if (admin == null) return Json(new { ok = false, msg = "Không tìm thấy admin" });
 
             admin.HoTen = hoTen;
             admin.Email = email;
             admin.SDT = sdt;
-
             db.SaveChanges();
+
             return Json(new { ok = true, msg = "Cập nhật thành công!" });
         }
 
-        // ================== CHANGE PASSWORD JSON ==================
+
         [HttpPost]
         public JsonResult ChangePassword(string matKhauCu, string matKhauMoi, string xacNhanMatKhau)
         {
-            int? adminId = Session["ADMIN_ID"] as int?;
-            if (adminId == null) adminId = 1;
-
-            var admin = db.ADMINs.FirstOrDefault(a => a.MaAdmin == adminId);
-            if (admin == null)
-                return Json(new { ok = false, msg = "Không tìm thấy admin" });
+            int maAdmin = (int)Session["ADMIN_LOGIN"];
+            var admin = db.ADMINs.FirstOrDefault(a => a.MaAdmin == maAdmin);
+            if (admin == null) return Json(new { ok = false, msg = "Không tìm thấy admin" });
 
             if (string.IsNullOrEmpty(matKhauCu) ||
                 string.IsNullOrEmpty(matKhauMoi) ||
